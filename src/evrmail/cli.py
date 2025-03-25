@@ -19,3 +19,5 @@ import evrmail.commands.drafts
 app.add_typer(evrmail.commands.drafts.drafts_app, name="drafts")
 import evrmail.commands.inbox
 app.add_typer(evrmail.commands.inbox.inbox_app, name="inbox")
+import evrmail.commands.daemon
+app.add_typer(evrmail.commands.daemon.daemon_app, name="daemon")
