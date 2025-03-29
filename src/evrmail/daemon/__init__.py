@@ -8,6 +8,7 @@ from evrmore_rpc import EvrmoreClient
 from evrmore_rpc.zmq import EvrmoreZMQClient, ZMQTopic
 from evrmail.config import load_config   
 from evrmail.utils.decrypt_message import decrypt_message
+
 config = load_config()
 
 STORAGE_DIR = Path.home() / ".evrmail"

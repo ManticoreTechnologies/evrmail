@@ -7,6 +7,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from evrmore_rpc import EvrmoreClient
 from evrmail.config import load_config
+from evrmail.utils.get_pubkey import get_pubkey
 config = load_config()
 def get_channel_pubkey(channel_name):
     """Look up the address that owns a message channel, and fetch its pubkey."""
@@ -18,12 +19,12 @@ def get_channel_pubkey(channel_name):
     address_info = client.validateaddress(address)
     return address_info.get("pubkey", address_info.get("scriptPubKey"))
 
-def encrypt_message_with_pubkey(message_json: dict, recipient_pubkey_hex: str):
+def encrypt_message(message_json: dict, to_address: str, from_address: str=config.get('active_address')):
 
     # First we outta encode the content in base64
     message_json["content"] = base64.b64encode(message_json["content"].encode()).decode()
-
-
+    
+    recipient_pubkey_hex = get_pubkey(to_address)
     recipient_pubkey_bytes = bytes.fromhex(recipient_pubkey_hex)
     recipient_pubkey = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), recipient_pubkey_bytes)
 
@@ -50,14 +51,16 @@ def encrypt_message_with_pubkey(message_json: dict, recipient_pubkey_hex: str):
     )
 
     encrypted_payload = {
-        "to": recipient_pubkey_hex,
-        "from": config['outbox_pubkey'],
+        "to": None,
+        "from": None,
+        "to_pubkey": recipient_pubkey_hex,
+        "from_pubkey": config.get('addresses').get(from_address).get('pubkey'),
         "ephemeral_pubkey": base64.b64encode(ephemeral_pubkey_bytes).decode(),
         "nonce": base64.b64encode(nonce).decode(),
         "ciphertext": base64.b64encode(ciphertext).decode(),
         "signature": message_json.get("signature")
     }
-    return json.dumps(encrypted_payload)
+    return encrypted_payload
 
 def encode_message(message):
     """
@@ -66,5 +69,5 @@ def encode_message(message):
     pubkey = get_channel_pubkey(message['to'])
     print(f"Using recipient pubkey: {pubkey}")
     message_str = json.dumps(message, sort_keys=True)
-    return encrypt_message_with_pubkey(message_str, pubkey)
+    return encrypt_message(message_str, pubkey)
 

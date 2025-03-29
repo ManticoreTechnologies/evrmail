@@ -1,6 +1,6 @@
 import typer
 from datetime import datetime
-from evrmail.daemon import load_inbox, save_inbox
+from evrmail.utils.inbox import load_all_messages, delete_message_by_path
 from rich.console import Console
 from textual.app import App, ComposeResult
 from textual.widgets import Header, Footer, Static
@@ -12,6 +12,15 @@ from rich.text import Text
 
 inbox_app = typer.Typer()
 console = Console()
+
+def parse_date(ts):
+    if isinstance(ts, int):
+        return datetime.fromtimestamp(ts)
+    try:
+        return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S.%fZ")
+    except Exception:
+        return datetime.fromtimestamp(0)  # fallback
+
 class InboxItem(Static):
     def __init__(self, msg, index: int):
         super().__init__()
@@ -21,18 +30,19 @@ class InboxItem(Static):
 
     def render(self) -> Text:
         status = "[bold green]\u2713[/]" if self.msg.get("read") else "[bold red]\u2022[/]"
-        date = datetime.strptime(self.msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M")
-        subj = self.msg["subject"] or "(No Subject)"
-        line = f"{status} [cyan]{self.msg['from']}[/] → [magenta]{self.msg['to']}[/] — [white]{subj}[/] [dim]({date})[/]"
+        content = self.msg.get("content", {})
+        subj = content.get("subject", "(No Subject)")
+        from_ = self.msg.get("from", "Unknown")
+        to_ = self.msg.get("to", "Unknown")
+        ts = self.msg.get("timestamp") or self.msg.get("received_at", "")
+        date = parse_date(ts).strftime("%Y-%m-%d %H:%M")
+
+        line = f"{status} [cyan]{from_}[/] → [magenta]{to_}[/] — [white]{subj}[/] [dim]({date})[/]"
         return Text.from_markup(line, style="on #444" if self.selected else "")
-def delete_message(index: int):
-    inbox = load_inbox()
-    if 0 <= index < len(inbox):
-        inbox.pop(index)
-        save_inbox(inbox)
+
 
 def reload_inbox(app):
-    app.inbox = load_inbox()
+    app.inbox = load_all_messages()
     app.items = [InboxItem(msg, i) for i, msg in enumerate(app.inbox)]
     app.selected_index = min(app.selected_index, len(app.items) - 1) if app.items else 0
     container = app.query_one("#inbox")
@@ -44,35 +54,27 @@ def reload_inbox(app):
 @inbox_app.command("list")
 def inbox():
     """Read your inbox."""
-    inbox = load_inbox()
+    inbox = load_all_messages()
     for message in inbox:
-        console.rule("Message")
-        console.print(f"From: {message['from']}")
-        console.print(f"To: {message['to']}")
-        console.print(f"Subject: {message['subject']}")
-        console.print(f"Date: {datetime.strptime(message['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d %H:%M:%S')}")
-        console.print(f"Body: {message['content']}")
-        console.rule()
+        console.log(message)
 
 @inbox_app.command("unread")
 def unread():
     """List all unread messages."""
-    inbox = load_inbox()
+    inbox = load_all_messages()
     for message in inbox:
         if not message.get("read"):
             console.rule("Unread Message")
-            console.print(f"From: {message['from']}")
-            console.print(f"To: {message['to']}")
-            console.print(f"Subject: {message['subject']}")
-            console.print(f"Date: {datetime.strptime(message['timestamp'], '%Y-%m-%dT%H:%M:%S.%fZ').strftime('%Y-%m-%d %H:%M:%S')}")
-            console.print(f"Body: {message['content']}")
+            console.print(f"From: {message.get('from')}")
+            console.print(f"To: {message.get('to')}")
+            console.print(f"Subject: {message.get('subject')}")
+            console.print(f"Date: {parse_date(message['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}")
+            console.print(f"Body: {message.get('content', '')}")
             console.rule()
 
 @inbox_app.command("open")
 def interactive():
     """Open an interactive inbox viewer."""
-
-    
 
     class MessageModal(ModalScreen):
         def __init__(self, msg):
@@ -80,14 +82,21 @@ def interactive():
             self.msg = msg
 
         def compose(self) -> ComposeResult:
-            from_ = self.msg["from"]
-            to_ = self.msg["to"]
-            subject = self.msg["subject"] or "(No Subject)"
-            date = datetime.strptime(self.msg["timestamp"], "%Y-%m-%dT%H:%M:%S.%fZ").strftime("%Y-%m-%d %H:%M:%S")
-            content = self.msg["content"]
+            from_ = self.msg.get("from", "Unknown")
+            to_ = self.msg.get("to", "Unknown")
+            subject = self.msg.get("content", {}).get("subject", "(No Subject)")
+            date = parse_date(self.msg.get("timestamp", "")) \
+                .strftime("%Y-%m-%d %H:%M:%S")
+
+            content = self.msg.get("content", {})
+            body_text = content.get("content", "(No content)")
 
             body = Text.from_markup(
-                f"[bold]From:[/bold] {from_}\n[bold]To:[/bold] {to_}\n[bold]Subject:[/bold] {subject}\n[bold]Date:[/bold] {date}\n\n{content}",
+                f"[bold]From:[/bold] {from_}\n"
+                f"[bold]To:[/bold] {to_}\n"
+                f"[bold]Subject:[/bold] {subject}\n"
+                f"[bold]Date:[/bold] {date}\n\n"
+                f"{body_text}",
                 style="white on black"
             )
 
@@ -96,6 +105,7 @@ def interactive():
         def on_key(self, event: events.Key) -> None:
             if event.key in ("escape", "enter"):
                 self.app.pop_screen()
+
 
     class InboxApp(App):
         CSS_PATH = None
@@ -110,7 +120,7 @@ def interactive():
         selected_index = reactive(0)
 
         def compose(self) -> ComposeResult:
-            self.inbox = load_inbox()
+            self.inbox = load_all_messages()
             yield Header()
             with VerticalScroll(id="inbox") as self.scroll:
                 self.items = [InboxItem(msg, i) for i, msg in enumerate(self.inbox)]
@@ -141,7 +151,8 @@ def interactive():
             self.push_screen(MessageModal(msg))
 
         def action_delete_msg(self):
-            delete_message(self.selected_index)
+            msg = self.inbox[self.selected_index]
+            delete_message_by_path(msg.get("__path"))
             reload_inbox(self)
 
     InboxApp().run()

@@ -122,11 +122,11 @@ def install_ipfs():
 
     start_ipfs_daemon()
 
-def add_to_ipfs(payload: str):
+def add_to_ipfs(batch_payload: dict):
     """Add a file to IPFS and return the CID."""
     payload_path = f"/tmp/evrmail-ipfs-{int(time.time())}.json"
     with open(payload_path, "w") as f:
-        f.write(payload)
+        f.write(json.dumps(batch_payload))
     try:
         result = subprocess.run(["ipfs", "add", "-q", payload_path], capture_output=True, text=True, check=True)
         cid = result.stdout.strip()
@@ -134,3 +134,21 @@ def add_to_ipfs(payload: str):
         return cid
     except subprocess.CalledProcessError as e:
         print(f"Failed to add file to IPFS: {e}")
+
+def fetch_ipfs_json(cid: str, port: int = 5101) -> dict:
+    """Fetch a JSON object from IPFS using the local API gateway."""
+    try:
+        url = f"http://127.0.0.1:{port}/api/v0/cat?arg={cid}"
+        response = requests.post(url, timeout=10)
+
+        if response.status_code == 200:
+            return json.loads(response.text)
+        else:
+            print(f"⚠️ Failed to fetch IPFS content. Status: {response.status_code}, Response: {response.text}")
+            return {}
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Error contacting IPFS: {e}")
+        return {}
+    except json.JSONDecodeError:
+        print("❌ Received invalid JSON content from IPFS.")
+        return {}

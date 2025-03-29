@@ -1,7 +1,7 @@
 import typer
 from pathlib import Path
 import json
-from evrmail.utils.encrypt_message import encrypt_message_with_pubkey
+from evrmail.utils.encrypt_message import encrypt_message
 from evrmail.utils.decrypt_message import decrypt_message
 from evrmail.utils.get_channel_pubkey import get_channel_pubkey
 from evrmail.utils.get_privkey import get_privkey

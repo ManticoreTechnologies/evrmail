@@ -1,10 +1,21 @@
+""" To send messages youll need to own an evrmore asset, any asset will do
+    but remember to set your outbox once you mint or buy one!
+
+    evrmail blockchain outbox set <owned_asset_name>
+    
+    Then to show the current outbox and associated keys use:
+
+    evrmail blockchain outbox get 
+
+ """
+
 from evrmail.config import load_config, save_config
 from evrmail.utils.get_privkey import get_privkey
 from evrmail.utils.get_pubkey import get_pubkey
 from evrmore_rpc import EvrmoreClient
 import typer
 
-outbox_app = typer.Typer()
+outbox_app = typer.Typer(name="outbox")
 
 """ evrmail outbox set <outbox> """
 @outbox_app.command("set")
