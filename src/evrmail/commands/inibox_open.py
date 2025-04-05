@@ -1,4 +1,6 @@
 import typer
+import os
+import json
 from datetime import datetime
 from evrmail.utils.inbox import load_all_messages, delete_message_by_path
 from rich.console import Console
@@ -12,6 +14,8 @@ from rich.text import Text
 
 inbox_app = typer.Typer()
 console = Console()
+
+PUBLIC_DIR = os.path.expanduser("~/.evrmail/public_channels")
 
 def parse_date(ts):
     if isinstance(ts, int):
@@ -39,7 +43,6 @@ class InboxItem(Static):
 
         line = f"{status} [cyan]{from_}[/] → [magenta]{to_}[/] — [white]{subj}[/] [dim]({date})[/]"
         return Text.from_markup(line, style="on #444" if self.selected else "")
-
 
 def reload_inbox(app):
     app.inbox = load_all_messages()
@@ -106,7 +109,6 @@ def interactive():
             if event.key in ("escape", "enter"):
                 self.app.pop_screen()
 
-
     class InboxApp(App):
         CSS_PATH = None
         BINDINGS = [
@@ -156,3 +158,23 @@ def interactive():
             reload_inbox(self)
 
     InboxApp().run()
+
+@inbox_app.command("public")
+def public(channel: str):
+    """View public messages from a channel."""
+    path = os.path.join(PUBLIC_DIR, f"{channel}.jsonl")
+    if not os.path.exists(path):
+        console.print(f"[red]No messages found for channel {channel}[/red]")
+        raise typer.Exit()
+
+    with open(path, "r") as f:
+        for line in f:
+            try:
+                msg = json.loads(line)
+                txid = msg.get("txid")[:8]
+                timestamp = parse_date(msg.get("timestamp")).strftime("%Y-%m-%d %H:%M:%S")
+                content = bytes.fromhex(msg.get("content")).decode(errors="replace")
+                console.rule(f"[dim]TXID {txid} @ {timestamp}")
+                console.print(content)
+            except Exception as e:
+                console.print(f"[red]Failed to parse message:[/red] {e}")

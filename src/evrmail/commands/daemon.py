@@ -2,16 +2,19 @@ import typer
 import subprocess
 import signal
 import os
+import json
+import time
 from pathlib import Path
 from evrmail.config import load_config
 from evrmail.utils.ipfs import fetch_ipfs_json
 from evrmail.utils.decrypt_message import decrypt_message
 from evrmail.utils.scan_payload import scan_payload
+from evrmail.utils.wif_to_privkey_hex import wif_to_privkey_hex
 
 
 daemon_app = typer.Typer()
 
-BASE_DIR = Path(__file__).resolve().parent.parent  # adjust as needed if structure changes
+BASE_DIR = Path.home() / ".evrmail"
 PID_FILE = BASE_DIR / "daemon.pid"
 LOG_FILE = BASE_DIR / "daemon.log"
 
@@ -32,7 +35,7 @@ def start():
     env = os.environ.copy()
     env["PYTHONPATH"] = str(BASE_DIR)
 
-    SRC_DIR = Path(__file__).resolve().parents[2]  # points to the actual 'src/' directory
+    SRC_DIR = Path(__file__).resolve().parents[2]
 
     process = subprocess.Popen(
         ["python3", "evrmail/daemon/__main__.py"],
@@ -99,17 +102,29 @@ def logs(clear: bool = typer.Option(False, "--clear", "-c", help="Clear the daem
         LOG_FILE.write_text("")
         typer.echo("🧹 Logs cleared.")
 
-
 @daemon_app.command("check")
 def check(cid: str):
-    import json
     """Manually check a given IPFS CID for messages to addresses in config."""
     config = load_config()
-    known_addresses = config.get("addresses", {}).keys()
+    known_addresses = config.get("addresses", {})
     payload = fetch_ipfs_json(cid)
     messages = scan_payload(payload)
 
-    found = [msg for msg in messages if msg["to"] in known_addresses]
+    found = []
+
+    for msg in messages:
+        recipient = msg.get("to")
+        if recipient in known_addresses:
+            try:
+                priv_wif = known_addresses[recipient].get("privkey")
+                privkey = wif_to_privkey_hex(priv_wif)
+                decrypted = decrypt_message(msg, privkey)
+                decrypted["cid"] = cid
+                decrypted["received_at"] = time.strftime("%Y-%m-%d %H:%M:%S")
+                decrypted["read"] = False
+                found.append(decrypted)
+            except Exception as e:
+                typer.echo(f"❌ Failed to decrypt message for {recipient}: {e}")
 
     if not found:
         typer.echo("❌ No messages found for your addresses in this CID.")

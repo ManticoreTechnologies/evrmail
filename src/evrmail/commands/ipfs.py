@@ -73,5 +73,5 @@ def uninstall():
 @ipfs_app.command("add")
 def ipfs_add(filepath: str):
     """Add a file to IPFS and return the CID."""
-    add_to_ipfs(filepath)
-
+    cid = add_to_ipfs(filepath)
+    print(cid)

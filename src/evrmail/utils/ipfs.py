@@ -135,20 +135,34 @@ def add_to_ipfs(batch_payload: dict):
     except subprocess.CalledProcessError as e:
         print(f"Failed to add file to IPFS: {e}")
 
-def fetch_ipfs_json(cid: str, port: int = 5101) -> dict:
-    """Fetch a JSON object from IPFS using the local API gateway."""
-    try:
-        url = f"http://127.0.0.1:{port}/api/v0/cat?arg={cid}"
-        response = requests.post(url, timeout=10)
+import requests
+import json
 
-        if response.status_code == 200:
-            return json.loads(response.text)
-        else:
-            print(f"⚠️ Failed to fetch IPFS content. Status: {response.status_code}, Response: {response.text}")
-            return {}
+def fetch_ipfs_json(cid: str, port: int = 5101) -> dict:
+    """Fetch a JSON object from IPFS, using local node first and falling back to public gateway."""
+    local_url = f"http://127.0.0.1:{port}/api/v0/cat?arg={cid}"
+    public_url = f"https://ipfs.io/ipfs/{cid}"
+
+    # Try local IPFS node first
+    try:
+        response = requests.post(local_url, timeout=5)
+        response.raise_for_status()
+        return json.loads(response.text)
     except requests.exceptions.RequestException as e:
-        print(f"❌ Error contacting IPFS: {e}")
-        return {}
+        print(f"⚠️ Local IPFS node failed: {e}")
     except json.JSONDecodeError:
-        print("❌ Received invalid JSON content from IPFS.")
-        return {}
+        print("❌ Local IPFS returned invalid JSON.")
+
+    # Fallback to public gateway
+    try:
+        response = requests.get(public_url, timeout=10)
+        response.raise_for_status()
+        print("🌐 Fetched from public IPFS gateway.")
+        return json.loads(response.text)
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Public IPFS fetch failed: {e}")
+    except json.JSONDecodeError:
+        print("❌ Public IPFS returned invalid JSON.")
+
+    return {}
+

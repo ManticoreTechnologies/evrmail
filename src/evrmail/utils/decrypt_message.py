@@ -29,18 +29,23 @@ def decrypt_message(encrypted: dict, recipient_privkey_hex: str) -> dict:
     """
     try:
         # Decode base64-encoded fields
-        ephemeral_pubkey_bytes = base64.b64decode(encrypted["ephemeral_pubkey"])
-        nonce = base64.b64decode(encrypted["nonce"])
-        ciphertext = base64.b64decode(encrypted["ciphertext"])
+        def safe_b64decode(data):
+            missing_padding = len(data) % 4
+            if missing_padding:
+                data += '=' * (4 - missing_padding)
+            return base64.b64decode(data)
+
+        ephemeral_pubkey_bytes = safe_b64decode(encrypted["ephemeral_pubkey"])
+        nonce = safe_b64decode(encrypted["nonce"])
+        ciphertext = safe_b64decode(encrypted["ciphertext"])
 
         # Reconstruct ephemeral public key
         ephemeral_pubkey = ec.EllipticCurvePublicKey.from_encoded_point(
             ec.SECP256K1(), ephemeral_pubkey_bytes
         )
 
-        # Load recipient's private key
-        from evrmail.utils.wif_to_privkey_hex import wif_to_privkey_hex  # or include the function above directly
-        recipient_privkey_bytes = bytes.fromhex(wif_to_privkey_hex(recipient_privkey_hex))
+        # Load recipient's private key from hex (not WIF!)
+        recipient_privkey_bytes = bytes.fromhex(recipient_privkey_hex)
         recipient_private_key = ec.derive_private_key(
             int.from_bytes(recipient_privkey_bytes, 'big'),
             ec.SECP256K1()
@@ -49,7 +54,7 @@ def decrypt_message(encrypted: dict, recipient_privkey_hex: str) -> dict:
         # Derive shared secret
         shared_key = recipient_private_key.exchange(ec.ECDH(), ephemeral_pubkey)
 
-        # Use HKDF to derive AES key
+        # Derive AES key using HKDF
         derived_key = HKDF(
             algorithm=hashes.SHA256(),
             length=32,
@@ -57,15 +62,15 @@ def decrypt_message(encrypted: dict, recipient_privkey_hex: str) -> dict:
             info=b"evrmail-encryption"
         ).derive(shared_key)
 
-        # Decrypt message
+        # Decrypt with AES-GCM
         aesgcm = AESGCM(derived_key)
         decrypted_bytes = aesgcm.decrypt(nonce, ciphertext, None)
 
-        # Convert to string and parse JSON
+        # Convert to JSON
         decrypted_str = decrypted_bytes.decode("utf-8")
-        message_json = json.loads(decrypted_str.replace("'", '"'))
+        message_json = json.loads(decrypted_str.replace("'", "\""))
 
-        # Decode the base64 content field
+        # Decode base64 content if needed
         if isinstance(message_json.get("content"), str):
             message_json["content"] = base64.b64decode(message_json["content"]).decode("utf-8")
 

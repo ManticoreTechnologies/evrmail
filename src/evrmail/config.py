@@ -12,7 +12,11 @@ DEFAULT_CONFIG = {
     "ipfs_binary": IPFS_BINARY_PATH,
     "addresses": {},
     "active_address": None,
-    "aliases": {},  # For clearnet email aliases like "phoenix@manticore.email"
+    "aliases": {},  
+    "rpc_host": "tcp://77.90.40.55",
+    "rpc_port": 8819,
+    "rpc_user": "evruser",
+    "rpc_password": "changeThisToAStrongPassword123"
 }
 
 def ensure_config_dir():

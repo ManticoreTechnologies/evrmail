@@ -1,17 +1,27 @@
 [project]
 name = "evrmail"
-version = "0.1.1"
+version = "0.1.10"
 description = "Encrypted messaging over Evrmore"
-authors = [{ name = "Phoenix" }]
+authors = [{ name = "Manticore Technologies LLC" }]
 dependencies = [
   "typer[all]",
   "coincurve",
   "base58",
   "pycryptodome",
-  "requests"
+  "requests",
+  "cryptography",
+  "textual",
+  "evrmore_rpc",
+  "zmq",
+  "mnemonic",
+  "hdwallet"
+
 ]
 readme = "README.md"
 requires-python = ">=3.10"
 
 [project.scripts]
-evrmail = "evrmail.__init__:main"
+evrmail = "evrmail.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}

@@ -10,6 +10,7 @@ from evrmail.utils.sign_message import sign_message
 from evrmail.utils.encrypt_message import encrypt_message
 from evrmail.utils.ipfs import add_to_ipfs
 from evrmail.config import load_config
+from evrmail.wallet.utils import get_active_address
 from datetime import datetime
 from evrmore_rpc import EvrmoreClient
 import json
@@ -31,43 +32,43 @@ def send_message(to_address: str, subject: str, content: str) -> str:
         str: Transaction ID of the blockchain message.
     """
 
-    # First make sure we have all proper configs set
-    from evrmail.config import load_config
     config = load_config()
     try:
-        if len(config.get('addresses')) == 0:
-            print("You must save at least one address to send an evrmail: evrmail addresses add <address> --friendly-name <friendly_name> ")
-            return
-        if config.get('active_address') is None:
-            print("You must select a saved address to send from: evrmail addresses use <address or friendly_name>.")
-            return
         if config.get('outbox') is None:
             print("You must specify an outbox asset to broadcast messages: evrmail blockchain outbox set <owned_asset_name>")
             return
     except:
         return
-    # Now create the encrypted message payload
+
+    # Ensure active wallet address is set
+    active_address = get_active_address()
+    if not active_address:
+        print("No active wallet address is selected. Use 'evrmail wallet use <address>' to set one.")
+        return
+
+    # Create the encrypted message payload
     from evrmail.utils.create_message_payload import create_message_payload
-    message_payload = create_message_payload(
-        "EL3BmmjmDa5LNMmF8fE4smdfxLmi8EJJMR", # To address
-        "Subject here",                       # Subject
-        "content"                             # Body content
-    )
-    
-    # Add the payload to a batch
-    from evrmail.utils.create_batch_payload import create_batch_payload
-    my_batch = create_batch_payload(
-        [message_payload]
-    )
+    try:
+        message_payload = create_message_payload(
+            to_address,      # To address
+            subject,         # Subject
+            content          # Body content
+        )
 
-    # Add to IPFS
-    cid = add_to_ipfs(my_batch)
+        # Add the payload to a batch
+        from evrmail.utils.create_batch_payload import create_batch_payload
+        my_batch = create_batch_payload([
+            message_payload
+        ])
 
-    print ("Uploaded to ipfs ",cid)
+        # Add to IPFS
+        cid = add_to_ipfs(my_batch)
+        print("Uploaded to IPFS:", cid)
 
-    # Broadcast the message to the evrmore blockchain
-    from evrmore_rpc import EvrmoreClient
-    rpc = EvrmoreClient()
-    txid = rpc.sendmessage(config["outbox"], cid)
-    print(f"Blockchain message transaction successfully sent: {txid[0]}")
-    return txid[0]
+        # Broadcast the message to the Evrmore blockchain using the active address
+        rpc = EvrmoreClient()
+        txid = rpc.sendmessage(config["outbox"], cid, sender=active_address)
+        print(f"Blockchain message transaction successfully sent: {txid[0]}")
+        return txid[0]
+    except Exception as e:
+        print("Failed to send message:", e)

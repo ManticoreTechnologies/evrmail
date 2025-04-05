@@ -18,11 +18,12 @@
 """
 
 import json
+from evrmail.crypto import sign_message
 from evrmail.utils.encrypt_message import encrypt_message
 from evrmail.utils.get_pubkey import get_pubkey
-from evrmail.utils.sign_message import sign_message
 from evrmail.utils.get_channel_pubkey import get_channel_pubkey
 from evrmail.config import load_config
+from evrmail.wallet import list_wallets, load_wallet, get_private_key_for_address, get_active_address
 
 def create_message_payload(to: str, subject: str, content: str) -> dict:
     """
@@ -37,16 +38,12 @@ def create_message_payload(to: str, subject: str, content: str) -> dict:
         dict: Encrypted message payload for inclusion in a batch.
     """
     config = load_config()
-    from_address = config.get("active_address")
-    addresses = config.get("addresses", {})
+    from_address = get_active_address()
 
     if not from_address:
-        raise Exception("⚠️ Active address not set. Use 'evrmail addresses use <address or name>'.")
+        raise Exception("⚠️ Active address not set. Use 'evrmail wallet use <address>'.")
 
-    if from_address not in addresses:
-        raise Exception(f"⚠️ Active address {from_address} not found in config.")
-
-    # Build and sign the raw message
+    # Build the raw message
     message = {
         "to": to,
         "from": from_address,
@@ -54,9 +51,20 @@ def create_message_payload(to: str, subject: str, content: str) -> dict:
         "content": content
     }
 
-    # Encrypt using recipient pubkey
-    encrypted_payload = encrypt_message(message, to)
-    encrypted_payload["to"] = to
-    encrypted_payload["from"] = from_address
+    # Get private key for signing
+    privkey = get_private_key_for_address(from_address)
+    print("Signing message")
+    signature = sign_message(json.dumps(message), privkey)
+    print("message signed")
+    message["signature"] = signature
 
-    return encrypted_payload
+    # Encrypt using recipient pubkey
+    try:
+        encrypted_payload = encrypt_message(message, to)
+        encrypted_payload["to"] = to
+        encrypted_payload["from"] = from_address
+        encrypted_payload["signature"] = signature
+        return encrypted_payload
+    except Exception as e:
+        print("Failed to encrypt message", e)
+        raise e

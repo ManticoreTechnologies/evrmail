@@ -8,7 +8,7 @@ import json
 from aiosmtpd.controller import Controller
 from email.message import EmailMessage
 from pathlib import Path
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
@@ -45,7 +45,7 @@ DOMAIN = config.get("domain", "evrmail.com")
 SMTP_PORT = config.get("smtp_port", 2525)
 API_PORT = config.get("api_port", 8888)
 DKIM_SELECTOR = config.get("dkim_selector", "default")
-DKIM_KEY_PATH = config.get("dkim_private_key_path", "/root/.evrmail/dkim_private.pem")
+DKIM_KEY_PATH = config.get("dkim_private_key_path", "/root/.evrmail/dkim_private_key.pem")
 ASSET_NAME = config.get("asset_name", "EVRMAIL~OUTBOX")  # Added asset name for messaging
 
 # Paths
@@ -124,6 +124,12 @@ class SendEmailRequest(BaseModel):
     body: str
     signature: str
 
+class SubassetPurchaseRequest(BaseModel):
+    username: str
+    payment_address: str
+    amount: float
+    signature: str
+
 # ────────────────────────────────────────────────────────────────────────────────
 # API ROUTES
 # ────────────────────────────────────────────────────────────────────────────────
@@ -169,6 +175,22 @@ def send_email(req: SendEmailRequest):
         return {"message": "Email sent."}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+
+@app.post("/buy_subasset")
+def buy_subasset(req: SubassetPurchaseRequest):
+    # Here you would verify the payment via the Evrmore blockchain
+    # For example, you could check the balance of the payment address:
+    balance = rpc_client.get_balance(req.payment_address)
+    if balance < req.amount:
+        raise HTTPException(status_code=400, detail="Insufficient funds.")
+
+    # Now issue the subasset
+    subasset_name = f"{ASSET_NAME}~{req.username}"
+    
+    # Use rpc_client to issue the subasset
+    txid = rpc_client.issueunique(ASSET_NAME, [subasset_name], [], req.payment_address, req.payment_address)
+
+    return {"message": f"Subasset {subasset_name} issued successfully.", "txid": txid}
 
 # ────────────────────────────────────────────────────────────────────────────────
 # EMAIL SENDER
