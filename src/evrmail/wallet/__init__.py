@@ -1,126 +1,98 @@
-"""
+# ─────────────────────────────────────────────────────────────
+# 📦 evrmail.wallet.__init__
+#
+# 📌 PURPOSE:
+#   Re-exports core wallet functions:
+#   - 📬 pubkey ➜ pubkeyhash ➜ address
+#   - 🧠 HD wallet creation, loading, saving
+#   - 🔍 Script decoding utilities
+#   - 🌐 RPC client & ZMQ event listener
+# ─────────────────────────────────────────────────────────────
 
-wallet.pubkey.to_hash(pubkey) # Hash a pubkey
-wallet.pubkeyhash.to_address(pubkeyhash) # Get an address from a pubkeyhash
-wallet.script.decode_script(scripthex) # Decode a transaction script
 
-
-"""
-
+# 📦 Standard + External Imports
 import os
-from .pubkeyhash import * 
-from .p2sh import *
 import json
-import os
 from datetime import datetime
+
+# 🧠 HD Wallet libs
 from hdwallet import HDWallet
 from hdwallet.cryptocurrencies import Evrmore
 from hdwallet.mnemonics.bip39 import BIP39Mnemonic
 from hdwallet.derivations import BIP44Derivation
 from mnemonic import Mnemonic
+
+# 🧰 Typer for CLI integration
 import typer
+
+# 🧠 Language seed generator
 mnemo = Mnemonic("english")
 
+
+# ─────────────────────────────────────────────────────────────
+# 📁 Wallet File Structure
+# ─────────────────────────────────────────────────────────────
+
+# 📁 Wallet save directory
 WALLET_DIR = os.path.expanduser("~/.evrmail/wallets")
+
+# ⚙️ EvrMail config path
 CONFIG_FILE = os.path.expanduser("~/.evrmail/config.json")
+
+# ✅ Ensure wallet directory exists
 os.makedirs(WALLET_DIR, exist_ok=True)
 
-def wallet_file_path(name: str) -> str:
-    return os.path.join(WALLET_DIR, f"{name}.json")
 
-def load_wallet(name: str):
-    path = wallet_file_path(name)
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        return json.load(f)
+# ─────────────────────────────────────────────────────────────
+# 🔁 Internal Modules (Public API Exports)
+# ─────────────────────────────────────────────────────────────
 
-def create_wallet(mnemonic: str, passphrase: str = "") -> HDWallet:
-    hdwallet = HDWallet(cryptocurrency=Evrmore, passphrase=passphrase)
-    hdwallet.from_mnemonic(BIP39Mnemonic(mnemonic=mnemonic))
-    return hdwallet
+# 🔗 Hashing & Address Conversion
+from .pubkeyhash import *
 
-def list_wallets():
-    return [f.replace(".json", "") for f in os.listdir(WALLET_DIR) if f.endswith(".json")]
-def save_wallet(name: str, hdwallet: HDWallet, address_count: int=1000):
-    addresses = []
-    for i in range(address_count):
-        derivation = BIP44Derivation(coin_type=175, account=0, change=0, address=i)
-        hdwallet.update_derivation(derivation)
-        addr = hdwallet.address()
-        addresses.append({
-            "index": i,
-            "path": f"m/44'/175'/0'/0/{i}",
-            "address": addr,
-            "public_key": hdwallet.public_key(),
-            "private_key": hdwallet.private_key()
-        })
-        hdwallet.clean_derivation()
-    mnemonic = hdwallet.mnemonic()
-    passphrase = hdwallet.passphrase()
-    wallet_data = {
-        "name": name,
-        "created_at": datetime.utcnow().isoformat(),
-        "mnemonic": mnemonic,
-        "passphrase": passphrase,
-        "coin_type": 175,
-        "root_xprv": hdwallet.root_xprivate_key(),
-        "root_xpub": hdwallet.root_xpublic_key(),
-        "first_address": addresses[0]['address'],
-        "addresses": addresses
-    }
+# 🔐 P2SH / Script-based operations
+from .p2sh import *
 
-    with open(wallet_file_path(name), "w") as f:
-        json.dump(wallet_data, f, indent=2)
+# 🧪 Script decoding utils (e.g., tx analysis)
+#   - wallet.script.decode_script(script_hex)
+#   - wallet.pubkeyhash.to_address(pubkeyhash)
+#   - wallet.pubkey.to_hash(pubkey)
 
 
+# ─────────────────────────────────────────────────────────────
+# 🌐 RPC Client & ZMQ Listener
+# ─────────────────────────────────────────────────────────────
 
+# 🔌 Evrmore node interaction (RPC)
+from evrmore_rpc import EvrmoreClient
 
-def import_wallet(path: str):
-    """Import a wallet from a backup file."""
-    try:
-        with open(os.path.expanduser(path), "r") as f:
-            data = json.load(f)
-    except Exception as e:
-        typer.echo(f"❌ Failed to read backup file: {e}")
-        raise typer.Exit()
+# 📡 Real-time events via ZeroMQ
+from evrmore_rpc.zmq import EvrmoreZMQClient
 
-    mnemonic = data.get("mnemonic")
-    passphrase = data.get("passphrase", "")
-    wallet_name = typer.prompt("📝 Name this imported wallet")
+# 🧠 Instantiate clients (default hardcoded for now)
+rpc_client = EvrmoreClient(
+    url="tcp://77.90.40.55",
+    rpcuser="evruser",
+    rpcpassword="changeThisToAStrongPassword123",
+    rpcport=8819,
+)
 
-    try:
-        hdwallet = create_wallet(mnemonic, passphrase)
-    except Exception as e:
-        typer.echo(f"❌ Failed to reconstruct HD wallet: {e}")
-        raise typer.Exit()
+zmq_client = EvrmoreZMQClient(
+    zmq_host="77.90.40.55",
+    zmq_port=28332,
+    rpc_client=rpc_client,
+    auto_decode=True,
+    auto_create_rpc=False,
+)
 
-    addresses = []
-    for i in range(len(data.get("addresses", []))):
-        derivation = BIP44Derivation(coin_type=175, account=0, change=0, address=i)
-        hdwallet.update_derivation(derivation)
-        addresses.append({
-            "index": i,
-            "path": f"m/44'/175'/0'/0/{i}",
-            "address": hdwallet.address(),
-            "public_key": hdwallet.public_key(),
-            "private_key": hdwallet.private_key(),
-        })
-        hdwallet.clean_derivation()
-
-    hdwallet.name = wallet_name
-    hdwallet.created_at = data.get("created_at", datetime.utcnow().isoformat())
-    hdwallet.first_address = addresses[0]["address"] if addresses else ""
-    hdwallet.addresses = addresses
-
-    save_wallet(wallet_name, hdwallet)
-    typer.echo(f"✅ Wallet '{wallet_name}' imported successfully.")
-
-
-__all__=[
-    "wallet_file_path"
-    "create_wallet",
+from .addresses import *
+from .store import load_wallet, list_wallets
+from .utils import *
+__all__ = [
+    "WALLET_DIR",
+    "CONFIG_FILE",
+    "addresses",
     "load_wallet",
-    "save_wallet",
     "list_wallets",
-    "WALLET_DIR", "pubkeyhash", "p2sh"]
+    "utils",
+]

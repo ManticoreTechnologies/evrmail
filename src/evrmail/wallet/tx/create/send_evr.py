@@ -152,4 +152,4 @@ def create_send_evr(
         sig = secret.sign(sighash) + bytes([SIGHASH_ALL])
         txins[i].scriptSig = CScript([sig, secret.pub])
 
-    return tx.serialize().hex()
+    return tx.serialize().hex(), (tx.GetTxid())[::-1].hex()

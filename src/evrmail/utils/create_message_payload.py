@@ -53,9 +53,7 @@ def create_message_payload(to: str, subject: str, content: str) -> dict:
 
     # Get private key for signing
     privkey = get_private_key_for_address(from_address)
-    print("Signing message")
     signature = sign_message(json.dumps(message), privkey)
-    print("message signed")
     message["signature"] = signature
 
     # Encrypt using recipient pubkey

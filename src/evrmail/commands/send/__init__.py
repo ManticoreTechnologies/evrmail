@@ -1,14 +1,23 @@
 from evrmail.utils.create_batch_payload import create_batch_payload
 from evrmore_rpc import EvrmoreClient
+from evrmail.commands.ipfs import add_to_ipfs
 import typer
 from pathlib import Path
 from typing import Optional
-
+from evrmail.wallet.tx.create.send_evr import create_send_evr_transaction
+from evrmail.wallet import rpc_client
 send_app = typer.Typer()
 
 __all__ = ["send_app"]
 
-@send_app.command()
+
+"""
+Reimplement to be like this:
+evrmail send evr --to <recipient> --amount <amount> 
+evrmail send asset --to <recipient> --asset <asset> --amount <amount>
+evrmail send msg --to <recipient> --subject <subject> --body <body>
+"""
+@send_app.command(name="send", help="🚀 Send EVR from your wallet")
 def send(
     from_address: str = typer.Option(..., "--from", help="Your wallet address or label (must be unlocked)"),
     outbox: str = typer.Option(..., "--outbox", help="Owned asset used to send message (e.g. EVRMAIL#PHOENIX)"),
@@ -21,9 +30,6 @@ def send(
     dry_run: bool = typer.Option(False, "--dry-run", help="Simulate the message send without broadcasting"),
     debug: bool = typer.Option(False, "--debug", help="Show raw transaction and debug info")
 ):
-    """
-    Send a message via EvrMail using a local wallet and outbox asset.
-    """
     # 🧠 Placeholder logic for implementation — to be replaced with actual send logic
     if not body and not body_file:
         typer.echo("Error: You must provide either --body or --body-file.")
@@ -35,9 +41,9 @@ def send(
 
     is_clearnet = "@" in to
     if is_clearnet:
-        typer.echo(f"Sending to clearnet email: {to}")
+        typer.echo(f"(dry-run) Sending to clearnet email: {to}")
     else:
-        typer.echo(f"Sending to blockchain address/contact: {to}")
+        typer.echo(f"(dry-run) Sending to blockchain address/contact: {to}")
         send_blockchain(to, from_address, outbox, subject, final_body, True)
 
 
@@ -51,19 +57,14 @@ def send_blockchain(to_address: str, from_address: str, outbox: str, subject: st
         content          # Body content
     )
 
-    # Add the payload to a batch
-    
-    my_batch = create_batch_payload([
-        message_payload
-    ])
 
-    # Add to IPFS
-    cid = add_to_ipfs(my_batch)
-    print("Uploaded to IPFS:", cid)
 
-    if not dry_run:
-        # Broadcast the message to the Evrmore blockchain using the active address
-        rpc = EvrmoreClient()
-        txid = rpc.sendmessage(outbox, cid, sender=from_address)
-        print(f"Blockchain message transaction successfully sent: {txid[0]}")
-        return txid[0]
+    tx, txid = create_send_evr_transaction(from_address, to_address, 1000)
+    response = rpc_client.testmempoolaccept([tx])
+    if response[0]['txid'] == txid and response[0]['allowed']:
+        print("(dry-run) Transaction accepted by evrmore node using testmempool")
+    else:
+        print("(dry-run) Transaction rejected by evrmore node using testmempool reason:", response[0]['reject-reason'])
+        return None
+    print("(dry-run) Raw transaction:", tx)
+    return txid

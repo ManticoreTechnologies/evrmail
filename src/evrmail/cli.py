@@ -13,7 +13,7 @@ evrmail debug   |   Advanced dev tools
 """
 
 import typer 
-from .commands import send_app, inbox_app, wallets_app, address_app, config_app, tx_app, debug_app, outbox_app
+from .commands import send_app, inbox_app, wallets_app, addresses_app, config_app, tx_app, debug_app, outbox_app, balance_app, dev_app
 
 # Main app
 app = typer.Typer(
@@ -23,25 +23,20 @@ app = typer.Typer(
 
 A secure, blockchain-native messaging system powered by asset channels and encrypted metadata.
 """,
-    epilog="""
-🔰 Quick Start:
-
-|1|  Create or load a wallet with |-> evrmail wallet init \n
-|2| Register a public inbox asset |-> evrmail outbox register EVRMAIL#YOURNAME\n
-|3|           Send a test message |-> evrmail send --from Phoenix --outbox EVRMAIL#PHOENIX --to contact --body "Hello!"\n
-
-💡 Use 'evrmail config' to set defaults like your active address and outbox.
-""",
     add_completion=False,
 )
-app.add_typer(send_app)
-app.add_typer(inbox_app)
+
+#app.add_typer(inbox_app)
 app.add_typer(wallets_app)
-app.add_typer(address_app)
-app.add_typer(config_app)
-app.add_typer(tx_app)
-app.add_typer(debug_app)
-app.add_typer(outbox_app)
+app.add_typer(addresses_app)
+app.add_typer(balance_app)
+app.add_typer(send_app)
+app.add_typer(dev_app)
+
+#app.add_typer(config_app)
+#app.add_typer(tx_app)
+#app.add_typer(debug_app)
+#app.add_typer(outbox_app)
 
 
 

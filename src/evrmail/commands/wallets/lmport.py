@@ -11,7 +11,7 @@
 
 # 📦 Imports
 import typer
-from evrmail.wallet import import_wallet as import_wallet_file
+from evrmail.wallet.utils import import_wallet as import_wallet_file
 
 # 🚀 Typer CLI app
 import_app = typer.Typer()

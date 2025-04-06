@@ -73,8 +73,6 @@ from .init import init_app
 from .list import list_app
 from .show import show_app
 from .create import create_app
-from evrmail.commands.wallets.to_be_moved.balance import balance_app
-from evrmail.commands.wallets.to_be_moved.createtransaction import createtransaction_app
 
 #wallets_app.add_typer(init_app)
 #wallets_app.add_typer(list_app)
