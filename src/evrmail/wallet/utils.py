@@ -25,6 +25,53 @@ def get_address_by_asset(asset: str) -> str:
         return list(addresses.keys())[0]
     else:
         return None
+def get_public_key(wallet: str, index: int) -> str:
+    """
+    Get the public key for a given index.
+    """
+    wallet = load_wallet(wallet)
+    return wallet.get("addresses", [])[index].get("public_key")
+
+
+
+def get_derivation_path(wallet: str, index: int) -> str:
+    """
+    Get the derivation path for a given index.
+    """
+    wallet = load_wallet(wallet)
+    return wallet.get("addresses", [])[index].get("path")
+import base58
+from hashlib import sha256
+def privkey_to_wif(privkey_hex: str, compressed: bool = True, mainnet: bool = True) -> str:
+    privkey_bytes = bytes.fromhex(privkey_hex)
+
+    prefix = b'\x80' if mainnet else b'\xef'
+    payload = prefix + privkey_bytes
+
+    if compressed:
+        payload += b'\x01'
+
+    checksum = sha256(sha256(payload).digest()).digest()[:4]
+    wif = base58.b58encode(payload + checksum)
+    return wif.decode()
+def get_address_by_index(wallet: str, index: int) -> str:
+    """
+    Get the address for a given index.
+    """
+    wallet = load_wallet(wallet)
+    return wallet.get("addresses", [])[index].get("address")
+
+def get_address_info_by_address(address: str) -> dict:
+    """
+    Get the address info for a given address.
+    """
+    wallets = list_wallets()    
+    for wallet in wallets:
+        wallet = load_wallet(wallet)
+        for _address in wallet.get("addresses", []):
+            if _address.get("address") == address:
+                return _address
+    return None
 
 def generate_mnemonic(strength: int = 128) -> str:
     if strength not in [128, 160, 192, 224, 256]:
