@@ -7,6 +7,7 @@ from hdwallet.cryptocurrencies import Evrmore
 from hdwallet.mnemonics.bip39 import BIP39Mnemonic
 from hdwallet.derivations import BIP44Derivation
 from mnemonic import Mnemonic
+
 mnemo = Mnemonic("english")
 
 from evrmail.wallet import (
@@ -192,6 +193,8 @@ def encode_pushdata(data: bytes) -> bytes:
         return b'\x4d' + l.to_bytes(2, 'little')  # OP_PUSHDATA2
     else:
         return b'\x4e' + l.to_bytes(4, 'little')  # OP_PUSHDATA4
+
+
 
 def serialize_signed_tx(vin, vout, locktime=0):
     version = (2).to_bytes(4, 'little')

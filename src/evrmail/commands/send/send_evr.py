@@ -17,6 +17,7 @@
 # ─────────────────────────────────────────────────────────
 
 # 📦 Imports
+import math
 from evrmore_rpc import EvrmoreClient
 import typer
 from typing import Optional
@@ -36,10 +37,14 @@ def send(
     from_address: Optional[str] = typer.Option(None, "--from", help="📿 Optional sender address (must be unlocked)"),
     to: str = typer.Option(..., "--to", help="🌟 Recipient address"),
     amount: float = typer.Option(..., "--amount", help="💰 Amount of EVR to send"),
+    fee_rate: float = typer.Option(0.01, "--fee-rate", help="💰 Fee rate in evr per kB"),
     dry_run: bool = typer.Option(False, "--dry-run", help="🧪 Simulate the send without broadcasting"),
     debug: bool = typer.Option(False, "--debug", help="🔋 Show raw transaction and debug info"),
     raw: bool = typer.Option(False, "--raw", help="📄 Output raw JSON (dry-run only)")
 ):
+    if fee_rate:
+        fee_rate = math.ceil(int(fee_rate * 1e8))
+
     # 😞 Determine funding address
     if not from_address:
         all_addresses = addresses.get_all_addresses()
@@ -48,16 +53,17 @@ def send(
             return
         from_address = all_addresses  # 🚧 Default to first address
 
-    typer.echo(f"(dry-run) Selecting {amount} EVR from {len(from_address)} addresses to send to {to}")
     result = send_evr_tx(
         to_address=to,
         from_addresses=from_address,
         amount=amount,
         dry_run=dry_run,
         debug=debug,
-        raw=raw
+        raw=raw,
+        fee_rate=fee_rate
     )
     if result and not raw:
+        typer.echo(f"Transaction result: {result}")
         typer.echo(f"✅ Dry-run TXID: {result}")
 
 
@@ -71,12 +77,14 @@ def send_evr_tx(
     amount: float,
     dry_run: bool = False,
     debug: bool = False,
-    raw: bool = False
+    raw: bool = False,
+    fee_rate: int = 0
 ):
     # 💼 Convert amount to satoshis
     amount_sats = int(amount * 1e8)
 
-    tx, txid = create_send_evr_transaction(from_addresses, to_address, amount_sats)
+    tx, txid = create_send_evr_transaction(from_addresses, to_address, amount_sats, fee_rate)
+    typer.echo(tx)
     result = rpc_client.testmempoolaccept([tx])
     status = result[0] if result else {}
 

@@ -33,19 +33,15 @@ def create_send_evr_transaction(
     from_addresses: list,
     to_address: str,
     evr_amount: int,
-    ipfs_hash: str = "",
-    fee_rate_per_kb: int = 1_000_000,  # satoshis per KB
+    fee_rate: int = 1_000_000,  # satoshis per kB (0.01 EVR)
 ) -> Tuple[str, str]:
     rpc_client = EvrmoreClient()
 
     utxos = rpc_client.getaddressutxos({"addresses": from_addresses})
-    print("Found", len(utxos), "UTXOs from", len(from_addresses), "addresses")
     private_keys = {utxo["address"]: get_private_key_for_address(utxo["address"]) for utxo in utxos}
     wif_privkeys = {address: wif_from_privkey(bytes.fromhex(private_key)) for address, private_key in private_keys.items()}
 
-    to_address = "EMuP1QsABQ7ccqis8QwKQoLBDVwnq5LrbX"
-
-    return create_send_evr(utxos, wif_privkeys, to_address, evr_amount)
+    return create_send_evr(utxos, wif_privkeys, to_address, evr_amount, fee_rate)
 
 def address_to_pubkey_hash(address: str) -> bytes:
     """Convert base58 address to pubkey hash (RIPEMD-160 of SHA-256 pubkey)."""
@@ -74,23 +70,32 @@ def wif_from_privkey(privkey_bytes: bytes, compressed: bool = True, mainnet: boo
 
     checksum = sha256(sha256(payload).digest()).digest()[:4]
     return base58.b58encode(payload + checksum).decode()
-
+def sign_transaction(tx: CMutableTransaction, utxos: list, wif_privkeys: dict):
+    for i, u in enumerate(utxos):
+        owner = u["address"]
+        secret = CEvrmoreSecret(wif_privkeys[owner])
+        script_pubkey = CScript(bytes.fromhex(u["script"]))
+        sighash = SignatureHash(script_pubkey, tx, i, SIGHASH_ALL)
+        sig = secret.sign(sighash) + bytes([SIGHASH_ALL])
+        tx.vin[i].scriptSig = CScript([sig, secret.pub])
+    return tx
 def create_send_evr(
     utxos: list,
     wif_privkeys: dict,
     to_address: str,
     amount: int,
-    fee: int = 10000000,
+    fee_rate: int = 1_000_000,  # satoshis per kB (0.01 EVR)
 ) -> Tuple[str, str]:
     """
     Construct and sign a raw EVR transaction using UTXOs from multiple addresses.
+    Dynamically calculates fee based on tx size.
 
     Parameters:
     - utxos: List of dicts (must include "owner" key for source address)
     - wif_privkeys: dict {address: WIF private key}
     - to_address: Recipient base58 address
     - amount: Amount to send in satoshis
-    - fee: Flat transaction fee (in satoshis)
+    - fee_rate: Fee per 1000 bytes in satoshis (default 1_000_000 = 0.01 EVR)
 
     Returns:
     - (raw_tx_hex, txid)
@@ -106,21 +111,18 @@ def create_send_evr(
         checksum = sha256(sha256(payload).digest()).digest()[:4]
         return base58.b58encode(payload + checksum).decode()
 
-    # 🧠 Default change goes to the first address in the privkey map
     first_addr = next(iter(wif_privkeys.keys()))
     change_secret = CEvrmoreSecret(wif_privkeys[first_addr])
     change_pubkey = change_secret.pub
     change_pubkey_hash = hash160(change_pubkey)
     change_address = pubkey_hash_to_address(change_pubkey_hash)
 
-    # 📤 Recipient output
     to_pubkey_hash = address_to_pubkey_hash(to_address)
     to_script_pubkey = CScript([
         OP_DUP, OP_HASH160, to_pubkey_hash, OP_EQUALVERIFY, OP_CHECKSIG
     ])
     txouts = [CMutableTxOut(amount, to_script_pubkey)]
 
-    # 📥 Inputs
     txins = []
     total_input = 0
     for u in utxos:
@@ -129,29 +131,46 @@ def create_send_evr(
         txins.append(CMutableTxIn(COutPoint(txid, vout)))
         total_input += u["satoshis"]
 
-    if total_input < amount + fee:
-        raise ValueError(f"Insufficient funds: have {total_input}, need {amount + fee}")
+    # ⚠️ Create dummy tx to estimate size (use 0-fee first)
+    dummy_tx = CMutableTransaction(txins, txouts)
+    for i, u in enumerate(utxos):
+        owner = u["address"]
+        secret = CEvrmoreSecret(wif_privkeys[owner])
+        script_pubkey = CScript(bytes.fromhex(u["script"]))
+        sighash = SignatureHash(script_pubkey, dummy_tx, i, SIGHASH_ALL)
+        sig = secret.sign(sighash) + bytes([SIGHASH_ALL])
+        dummy_tx.vin[i].scriptSig = CScript([sig, secret.pub])
 
-    # 💸 Add change output if needed
-    change = total_input - amount - fee
+    estimated_size = len(dummy_tx.serialize())
+    fee_per_byte = max(1010, fee_rate / 1000)
+    estimated_fee = estimated_size * fee_per_byte
+
+    if total_input < amount + estimated_fee:
+        raise ValueError(f"Insufficient funds: have {total_input}, need {amount + estimated_fee}")
+
+    change = total_input - amount - estimated_fee
     if change > 0:
         change_script = CScript([
             OP_DUP, OP_HASH160, address_to_pubkey_hash(change_address), OP_EQUALVERIFY, OP_CHECKSIG
         ])
         txouts.append(CMutableTxOut(change, change_script))
 
-    # 🛠️ Create unsigned tx
+    # Final tx
     tx = CMutableTransaction(txins, txouts)
-
-    # 🖊️ Sign each input with its respective key
     for i, u in enumerate(utxos):
-        owner = u.get("address")
-        if not owner or owner not in wif_privkeys:
-            raise ValueError(f"Missing private key for UTXO owner: {owner}")
+        owner = u["address"]
         secret = CEvrmoreSecret(wif_privkeys[owner])
         script_pubkey = CScript(bytes.fromhex(u["script"]))
         sighash = SignatureHash(script_pubkey, tx, i, SIGHASH_ALL)
         sig = secret.sign(sighash) + bytes([SIGHASH_ALL])
-        txins[i].scriptSig = CScript([sig, secret.pub])
+        tx.vin[i].scriptSig = CScript([sig, secret.pub])
+
+    size = len(tx.serialize())
+    final_fee = size * fee_per_byte
+
+    # update txouts with final fee
+    final_change = total_input - amount - final_fee
+    txouts[1].nValue = final_change
+    tx = sign_transaction(tx, utxos, wif_privkeys)
 
     return tx.serialize().hex(), (tx.GetTxid())[::-1].hex()

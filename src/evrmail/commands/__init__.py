@@ -18,3 +18,4 @@ from .send import send_app
 from .outbox import outbox_app
 from .inbox import inbox_app
 from .dev import dev_app
+from .contacts import contacts_app

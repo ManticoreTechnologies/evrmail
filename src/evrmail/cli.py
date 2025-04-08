@@ -13,7 +13,7 @@ evrmail debug   |   Advanced dev tools
 """
 
 import typer 
-from .commands import send_app, inbox_app, wallets_app, addresses_app, config_app, tx_app, debug_app, outbox_app, balance_app, dev_app
+from .commands import send_app, inbox_app, wallets_app, addresses_app, config_app, tx_app, debug_app, outbox_app, balance_app, dev_app, contacts_app
 
 # Main app
 app = typer.Typer(
@@ -32,7 +32,7 @@ app.add_typer(addresses_app)
 app.add_typer(balance_app)
 app.add_typer(send_app)
 app.add_typer(dev_app)
-
+app.add_typer(contacts_app)
 #app.add_typer(config_app)
 #app.add_typer(tx_app)
 #app.add_typer(debug_app)

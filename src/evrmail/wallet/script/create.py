@@ -61,33 +61,58 @@ def create_p2pkh_script(pubkey_hash_hex: str) -> str:
         "ac"                        # OP_CHECKSIG
     )
 
-def create_transfer_asset_script(pubkey_hash_hex: str, asset_name: str, amount: int, ipfs_cidv0: Optional[str] = None) -> str:
+def create_transfer_asset_script(pubkey_hash: bytes, asset_name: str, amount: int, ipfs_cidv0: Optional[str] = None) -> str:
     """
-    Properly constructs a P2PKH + OP_EVR_ASSET transfer script using valid pushdata encoding.
+    Constructs a P2PKH + OP_EVR_ASSET transfer script, including proper handling of ownership tokens (!).
     """
+
     asset_name_bytes = asset_name.encode()
-    asset_payload = (
-        b"evr" +
-        b"t" +
-        encode_pushdata(asset_name_bytes) +
-        amount.to_bytes(8, "little")
-    )
+    if asset_name.endswith("!"):
+        # ── 🏷️ Ownership token: must be exactly 1 and use OP_TRANSFER_OWNER (0x74)
+        if amount != 1e8:
+            raise ValueError("Ownership tokens (ending in '!') must be sent with amount = 1")
 
-    if ipfs_cidv0:
-        multihash_bytes = custom_base58_decode(ipfs_cidv0)
-        asset_payload += multihash_bytes
+        asset_payload = (
+            b"evr" +
+            b"t" +  # transfer
+            encode_pushdata(asset_name_bytes) +
+            (amount).to_bytes(8, "little")  # fixed to 1
+        )
 
-    # Final script = standard P2PKH + OP_EVR_ASSET + pushdata
-    script = (
-        bytes.fromhex("76a914") +
-        bytes.fromhex(pubkey_hash_hex.lower()) +
-        bytes.fromhex("88ac") +
-        b"\xc0" +
-        encode_pushdata(asset_payload) +
-        b"\x75"  # OP_DROP
-    )
+        # Final script with OP_TRANSFER_OWNER (0x74)
+        script = (
+            bytes.fromhex("76a914") +
+            pubkey_hash +
+            bytes.fromhex("88ac") +
+            b"\xc0" +
+            encode_pushdata(asset_payload) +
+            b"\x74"  # OP_TRANSFER_OWNER
+        )
+
+    else:
+        # ── 🪙 Regular asset transfer
+        asset_payload = (
+            b"evr" +
+            b"t" +
+            encode_pushdata(asset_name_bytes) +
+            amount.to_bytes(8, "little")
+        )
+
+        if ipfs_cidv0:
+            multihash_bytes = custom_base58_decode(ipfs_cidv0)
+            asset_payload += multihash_bytes
+
+        script = (
+            bytes.fromhex("76a914") +
+            pubkey_hash +
+            bytes.fromhex("88ac") +
+            b"\xc0" +
+            encode_pushdata(asset_payload) +
+            b"\x75"  # OP_TRANSFER
+        )
 
     return script.hex()
+
 
 
 
