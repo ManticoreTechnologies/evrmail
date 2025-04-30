@@ -29,6 +29,36 @@ from evrmore.core.scripteval import SignatureHash, SIGHASH_ALL
 import base58
 import base58
 from hashlib import sha256
+def filter_utxos_by_asset(utxo_data: dict, asset_name: str) -> dict:
+    filtered = []
+    print('--------------Filtering UTXOS---------------')
+    for address, utxos in utxo_data.items():
+        matching_utxos = [u for u in utxos if u.get("asset") == asset_name and u.get("spent") == False]
+        if matching_utxos:
+            filtered.extend(matching_utxos)
+    print(matching_utxos)
+    print('--------------------------------------------')
+
+    return filtered
+    
+def flatten_utxos(utxo_data: dict) -> list:
+    flat_list = []
+    for utxos in utxo_data.values():
+        flat_list.extend(utxos)
+    return flat_list
+
+def combine_utxos(all_utxos):
+    utxos = {}
+    mempool = all_utxos['mempool']
+    confirmed = all_utxos['confirmed']
+    for address in mempool:
+        utxos[address] = mempool[address]
+    for address in confirmed:
+        if address in list(utxos.keys()):
+            utxos[address].append(confirmed[address])
+        else:
+            utxos[address] = confirmed[address]
+    return utxos
 # Main transaction builder for asset transfer
 def create_send_asset_transaction(
     from_addresses: list,
@@ -36,22 +66,25 @@ def create_send_asset_transaction(
     asset_name: str,
     asset_amount: int,
     fee_rate: int = 1_000_000,  # sat/kB
+    ipfs_cidv0: str = None,
 ) -> Tuple[str, str]:
-    rpc_client = EvrmoreClient()
-
-    utxos = rpc_client.getaddressutxos({"addresses": from_addresses})
-    asset_utxos = rpc_client.getaddressutxos({"addresses": from_addresses, "assetName": asset_name})
+    from evrmail import rpc_client
+    from evrmail.daemon.__main__ import load_utxos
+    utxos = combine_utxos(load_utxos())
+    print(utxos)
+    asset_utxos =  filter_utxos_by_asset(utxos, asset_name)
+    evr_utxos = filter_utxos_by_asset(utxos, None)
     if len(asset_utxos) == 0:
-        raise Exception(f"No asset utxos found for address {from_addresses}")
+        raise Exception(f"No matching asset utxos found for {asset_name} across {len(from_addresses)} addresses.")
     private_keys = {
-        utxo["address"]: get_private_key_for_address(utxo["address"]) for utxo in utxos
+        utxo["address"]: get_private_key_for_address(utxo["address"]) for utxo in flatten_utxos(utxos)
     }
     wif_privkeys = {
         addr: wif_from_privkey(bytes.fromhex(key))
         for addr, key in private_keys.items()
     }
 
-    return create_send_asset(utxos, asset_utxos, wif_privkeys, to_address, asset_name, asset_amount, fee_rate)
+    return create_send_asset(evr_utxos, asset_utxos, wif_privkeys, to_address, asset_name, asset_amount, fee_rate, ipfs_cidv0)
 
 def address_to_pubkey_hash(address: str) -> bytes:
     """Convert base58 address to pubkey hash (RIPEMD-160 of SHA-256 pubkey)."""
@@ -81,10 +114,22 @@ def wif_from_privkey(privkey_bytes: bytes, compressed: bool = True, mainnet: boo
     checksum = sha256(sha256(payload).digest()).digest()[:4]
     return base58.b58encode(payload + checksum).decode()
 def sign_transaction(tx: CMutableTransaction, utxos: list, wif_privkeys: dict):
+    import json
     for i, u in enumerate(utxos):
         owner = u["address"]
+
+        print(u)
+        print(type(u))
         secret = CEvrmoreSecret(wif_privkeys[owner])
-        script_pubkey = CScript(bytes.fromhex(u["script"]))
+        print(type(u.get("script")) is str)
+        if type(u.get("script")) is str:
+            script_hex = u.get("script")
+        else:
+            script_hex = u.get("script").get("hex")
+            
+
+
+        script_pubkey = CScript(bytes.fromhex(script_hex))
         sighash = SignatureHash(script_pubkey, tx, i, SIGHASH_ALL)
         sig = secret.sign(sighash) + bytes([SIGHASH_ALL])
         tx.vin[i].scriptSig = CScript([sig, secret.pub])
@@ -97,6 +142,7 @@ def create_send_asset(
     asset_name: str,
     asset_amount: int,
     fee_rate: int = 1_000_000,
+    ipfs_cidv0: str = None
 ) -> Tuple[str, str]:
     from Crypto.Hash import RIPEMD160
     from hashlib import sha256
@@ -110,6 +156,7 @@ def create_send_asset(
         return base58.b58encode(payload + checksum).decode()
 
     # ─── Change address setup ─────────────────────────────────────────────────────
+    print(wif_privkeys)
     first_addr = next(iter(wif_privkeys))
     change_secret = CEvrmoreSecret(wif_privkeys[first_addr])
     change_pubkey = change_secret.pub
@@ -119,12 +166,13 @@ def create_send_asset(
     # ─── Step 1: Add ONLY asset inputs (required for asset transfer) ──────────────
     asset_inputs = []
     for u in asset_utxos:
-        asset_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["outputIndex"])))
+        asset_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["vout"])))
 
     asset_script = create_transfer_asset_script(
         address_to_pubkey_hash(to_address),
         asset_name,
-        asset_amount
+        asset_amount,
+        ipfs_cidv0
     )
     asset_script_bytes = bytes.fromhex(asset_script)
     txouts = [CMutableTxOut(0, asset_script_bytes)]  # value = 0 for asset vout
@@ -135,11 +183,12 @@ def create_send_asset(
     fee_input_total = 0
 
     for u in utxos:
+        print(u)
         if u in asset_utxos:
             continue
-        dummy_fee_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["outputIndex"])))
+        dummy_fee_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["vout"])))
         dummy_utxos.append(u)
-        fee_input_total += u["satoshis"]
+        fee_input_total += u["amount"]
         if fee_input_total >= 1_000_000:  # rough high buffer
             break
 
@@ -157,9 +206,9 @@ def create_send_asset(
     for u in utxos:
         if u in asset_utxos:
             continue
-        fee_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["outputIndex"])))
+        fee_inputs.append(CMutableTxIn(COutPoint(lx(u["txid"]), u["vout"])))
         fee_utxos.append(u)
-        fee_input_total += u["satoshis"]
+        fee_input_total += u["amount"]
         if fee_input_total >= estimated_fee:
             break
 

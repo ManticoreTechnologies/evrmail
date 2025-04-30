@@ -1,21 +1,45 @@
-from evrmail.commands.frp import frp_app
-from evrmail.commands.smtp import smtp_app
-from evrmail.commands.daemon import daemon_app
-from evrmail.commands.drafts import drafts_app
-from evrmail.commands.ipfs import ipfs_app
-from evrmail.commands.register import register_app
+"""
+📬 EvrMail — Decentralized Email on the Evrmore Blockchain
 
-from .clearnet import send_app as clearnet_send_app
-from .blockchain import send_app as blockchain_send_app
+A secure, blockchain-native messaging protocol powered by asset channels, 
+encrypted IPFS metadata, and peer-to-peer message forwarding.
 
-from .balance import balance_app
-from .addresses import addresses_app
-from .config import config_app
-from .tx import tx_app
-from .debug import debug_app
+🔧 Developer: EQTL7gMLYkuu9CfHcRevVk3KdnG5JgruSE (Cymos)  
+🏢 For: EfddmqXo4itdu2TbiFEvuDZeUvkFC7dkGD (Manticore Technologies, LLC)  
+© 2025 Manticore Technologies, LLC
+"""
+
+# ─────────────────────────────────────────────────────────────
+# 📦 evrmail.commands
+#
+# 🧩 CLI Command Modules:
+#   💼 wallets     — Manage your Evrmore wallets
+#   🏷️  addresses   — Manage addresses and keys
+#   💳 balance     — Show EVR or asset balances
+#   🚀 send        — Send EVR, assets, or encrypted messages
+#   📥 receive     — Get a fresh receive address
+#   📱 contacts    — Manage your address book
+#   🔧 dev         — Developer & debug tools
+# ─────────────────────────────────────────────────────────────
+
+# 📦 Imports
 from .wallets import wallets_app
+from .addresses import addresses_app
+from .balance import balance_app
 from .send import send_app
-from .outbox import outbox_app
-from .inbox import inbox_app
-from .dev import dev_app
+from .receive import receive_app
 from .contacts import contacts_app
+from .dev import dev_app
+from .ipfs import ipfs_app
+
+# 🌐 Exported CLI apps
+__all__ = [
+    "wallets_app",
+    "addresses_app",
+    "balance_app",
+    "send_app",
+    "receive_app",
+    "contacts_app",
+    "dev_app",
+    "ipfs_app"
+]

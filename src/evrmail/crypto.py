@@ -1,3 +1,22 @@
+"""
+📬 EvrMail — Decentralized Email on the Evrmore Blockchain
+
+A secure, blockchain-native messaging protocol powered by asset channels, 
+encrypted IPFS metadata, and peer-to-peer message forwarding.
+
+🔧 Developer: EQTL7gMLYkuu9CfHcRevVk3KdnG5JgruSE (Cymos)  
+🏢 For: EfddmqXo4itdu2TbiFEvuDZeUvkFC7dkGD (Manticore Technologies, LLC)  
+© 2025 Manticore Technologies, LLC
+"""
+
+# ─────────────────────────────────────────────────────────────
+# 📦 evrmail.crypto
+#
+# 📌 PURPOSE:
+#   - 📦 evrmail.crypto
+# ─────────────────────────────────────────────────────────────
+
+
 
 import base58
 import base64

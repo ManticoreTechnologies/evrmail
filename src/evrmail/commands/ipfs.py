@@ -7,7 +7,7 @@ import time
 import os
 from evrmail.utils.ipfs import add_to_ipfs
 
-ipfs_app = typer.Typer()
+ipfs_app = typer.Typer(name="ipfs", help="Manage ipfs install and operation")
 
 @ipfs_app.command("add")
 def add(path: str):

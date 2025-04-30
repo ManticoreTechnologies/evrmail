@@ -11,16 +11,43 @@ from mnemonic import Mnemonic
 mnemo = Mnemonic("english")
 
 from evrmail.wallet import (
-    WALLET_DIR,
-    CONFIG_FILE
+    WALLET_DIR
 )
+def load_all_wallet_keys():
+    # List all wallets by name
+    wallets = list_wallets()
+    wallet_keys = {}
+    for wallet in wallets:
+        wallet_keys[wallet] = load_wallet(wallet)
+        del wallet_keys[wallet]['addresses']
+    return wallet_keys
+def wif_from_privkey(privkey_bytes: bytes, compressed: bool = True, mainnet: bool = True) -> str:
+    """
+    Convert raw private key bytes into WIF format for Evrmore.
+    
+    Parameters:
+    - privkey_bytes: 32-byte private key
+    - compressed: whether to encode as compressed key (default True)
+    - mainnet: True for mainnet (EVR), False for testnet (tEVR)
 
-from . import rpc_client
+    Returns:
+    - WIF-encoded private key string
+    """
+    if len(privkey_bytes) != 32:
+        raise ValueError("Private key must be 32 bytes")
 
+    prefix = b'\x80' if mainnet else b'\xef'
+    payload = prefix + privkey_bytes
+    if compressed:
+        payload += b'\x01'
+
+    checksum = sha256(sha256(payload).digest()).digest()[:4]
+    return base58.b58encode(payload + checksum).decode()
 def get_address_by_asset(asset: str) -> str:
     """
     Get the address for a given asset.
     """
+    from evrmail import rpc_client
     addresses = rpc_client.listaddressesbyasset(asset)
     if addresses:
         return list(addresses.keys())[0]
@@ -138,13 +165,6 @@ def save_wallet(name: str, hdwallet: HDWallet, address_count: int=1000):
     with open(wallet_file_path(name), "w") as f:
         json.dump(wallet_data, f, indent=2)
 
-def get_active_address() -> str:
-    if os.path.exists(CONFIG_FILE):
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-            return config.get("active_address")
-    return None
-
 def load_wallet(name: str):
     path = wallet_file_path(name)
     if not os.path.exists(path):
@@ -159,19 +179,23 @@ def list_wallet_addresses(wallet_data):
     return wallet_data.get("addresses", [])
 
 def get_private_key_for_address(address: str) -> str:
+    found_address = None
     for name in list_wallets():
         wallet = load_wallet(name)
-        for entry in wallet.get("addresses", []):
-            if entry["address"] == address:
-                return entry["private_key"]
+        if address in wallet['addresses']:
+            found_address = wallet['addresses'][address]
+    if found_address:
+        return found_address['private_key']
     raise Exception(f"Private key for address {address} not found in any wallet.")
 
 def get_public_key_for_address(address: str) -> str:
+    found_address = None
     for name in list_wallets():
         wallet = load_wallet(name)
-        for entry in wallet.get("addresses", []):
-            if entry["address"] == address:
-                return entry["public_key"]
+        if address in wallet['addresses']:
+            found_address = wallet['addresses'][address]
+    if found_address:
+        return found_address['public_key']
     raise Exception(f"Public key for address {address} not found in any wallet.")
         
 
@@ -247,7 +271,61 @@ def serialize_unsigned_tx(vin, vout, locktime=0):
     locktime_bytes = locktime.to_bytes(4, 'little')
 
     return version + input_count + inputs + output_count + outputs + locktime_bytes
-import hashlib
+import json
+from pathlib import Path
+
+def calculate_balances():
+    """
+    Calculate EVR and Asset balances from ~/.evrmail/utxos/confirmed.json and mempool.json.
+
+    Returns:
+        {
+            "evr": {"address1": total_balance, "address2": total_balance, ...},
+            "assets": {
+                "ASSETNAME": {"address1": qty, "address2": qty, ...},
+                ...
+            }
+        }
+    """
+    STORAGE_DIR = Path.home() / ".evrmail"
+    UTXO_DIR = STORAGE_DIR / "utxos"
+    CONFIRMED_FILE = UTXO_DIR / "confirmed.json"
+    MEMPOOL_FILE = UTXO_DIR / "mempool.json"
+
+    balances = {
+        "evr": {},
+        "assets": {}
+    }
+
+    # Helper to add a UTXO into balances
+    def add_utxo_to_balance(addr, asset_name, amount):
+        if asset_name is None:
+            balances["evr"][addr] = balances["evr"].get(addr, 0) + amount
+        else:
+            if asset_name not in balances["assets"]:
+                balances["assets"][asset_name] = {}
+            balances["assets"][asset_name][addr] = balances["assets"][asset_name].get(addr, 0) + amount
+
+    # Load from confirmed UTXOs
+    if CONFIRMED_FILE.exists():
+        confirmed = json.loads(CONFIRMED_FILE.read_text())
+        for address, utxos in confirmed.items():
+            for utxo in utxos:
+                if utxo.get("spent", False):
+                    continue
+                add_utxo_to_balance(address, utxo.get("asset"), utxo.get("amount", 0))
+
+    # Load from mempool UTXOs (unconfirmed)
+    if MEMPOOL_FILE.exists():
+        mempool = json.loads(MEMPOOL_FILE.read_text())
+        for address, utxos in mempool.items():
+            for utxo in utxos:
+                if utxo.get("spent", False):
+                    continue
+                add_utxo_to_balance(address, utxo.get("asset"), utxo.get("amount", 0))
+
+    return balances
+
 
 def get_sighash(vin, vout, input_index, script_pubkey_hex, locktime=0):
     version = 2 .to_bytes(4, 'little')
@@ -298,48 +376,40 @@ def sign_input(private_key_hex: str, sighash: bytes) -> str:
 def wallet_file_path(name: str) -> str:
     return os.path.join(WALLET_DIR, f"{name}.json")
 
-def load_wallet(name: str):
-    path = wallet_file_path(name)
-    if not os.path.exists(path):
-        return None
-    with open(path) as f:
-        return json.load(f)
 
-def create_wallet(mnemonic: str, passphrase: str = "") -> HDWallet:
-    hdwallet = HDWallet(cryptocurrency=Evrmore, passphrase=passphrase)
-    hdwallet.from_mnemonic(BIP39Mnemonic(mnemonic=mnemonic))
-    return hdwallet
 
-def save_wallet(name: str, hdwallet: HDWallet, address_count: int=1000):
-    addresses = []
-    for i in range(address_count):
-        derivation = BIP44Derivation(coin_type=175, account=0, change=0, address=i)
-        hdwallet.update_derivation(derivation)
-        addr = hdwallet.address()
-        addresses.append({
-            "index": i,
-            "path": f"m/44'/175'/0'/0/{i}",
-            "address": addr,
-            "public_key": hdwallet.public_key(),
-            "private_key": hdwallet.private_key()
-        })
-        hdwallet.clean_derivation()
-    mnemonic = hdwallet.mnemonic()
-    passphrase = hdwallet.passphrase()
-    wallet_data = {
-        "name": name,
-        "created_at": datetime.utcnow().isoformat(),
-        "mnemonic": mnemonic,
-        "passphrase": passphrase,
-        "coin_type": 175,
-        "root_xprv": hdwallet.root_xprivate_key(),
-        "root_xpub": hdwallet.root_xpublic_key(),
-        "first_address": addresses[0]['address'],
-        "addresses": addresses
+
+
+
+
+""" Im gonna refactor how we save wallets to disk 
+
+    Im thinking we store maps of addresses, friendly names, and paths to the wallet file.
+    
+    maybe like this:
+
+    {
+        "name": "wallet_name",
+        "created_at": "date_created",
+        "extended_public_key": "xpub",
+        "extended_private_key": "xprv",
+        "HD_seed": "seed",
+        "mnemonic": "mnemonic",
+        "mnemonic_passphrase": "passphrase",
+        "addresses": {
+            "address":{
+                "public_key": "address",
+            "private_key": "address",
+            "path": "address",
+            "friendly_name": "address"
+            },
+            "friendly_name": "address",
+            "path": "address"
+        }
     }
+    
 
-    with open(wallet_file_path(name), "w") as f:
-        json.dump(wallet_data, f, indent=2)
+"""
 
 
 

@@ -17,3 +17,13 @@ def from_script(script_hex: str) -> str:
     evr_p2sh_prefix = bytes([0x5c])  # Evrmore mainnet P2SH = 0x5c
     payload = evr_p2sh_prefix + ripemd160_digest
     return base58check_encode(payload)
+
+def to_address(script_hash_hex: str) -> str:
+    """
+    Convert a 20-byte P2SH script hash (hex) into an Evrmore mainnet address.
+    """
+    script_hash = bytes.fromhex(script_hash_hex)
+
+    evr_p2sh_prefix = bytes([0x5c])  # 0x5c for Evrmore P2SH (mainnet)
+    payload = evr_p2sh_prefix + script_hash
+    return base58check_encode(payload)

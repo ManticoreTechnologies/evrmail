@@ -16,7 +16,7 @@
 # 📦 Imports
 import typer
 import json
-from evrmail.wallet import WALLET_DIR, load_wallet
+from evrmail.wallet import store
 
 # 🚀 Typer CLI app
 export_app = typer.Typer()
@@ -32,7 +32,7 @@ def export_wallet(
 ):
     """📤 Export a wallet's full JSON data to a file or stdout."""
     try:
-        data = load_wallet(name)
+        data = store.load_wallet(name)
 
         # 📄 Print to stdout
         if raw:
@@ -45,6 +45,9 @@ def export_wallet(
                 json.dump(data, f, indent=2)
             typer.echo(f"✅ Wallet `{name}` exported to: {output}")
         else:
-            typer.echo("❌ Please provide --output <filename> or use --raw.")
+            output = f"{name}_backup.json"
+            with open(output, "w") as f:
+                json.dump(data, f, indent=2)
+            typer.echo(f"✅ Wallet `{name}` exported to: {output}")
     except Exception as e:
         typer.echo(f"❌ Export failed: {e}")

@@ -35,7 +35,7 @@ import uuid
 from datetime import datetime
 from evrmail.config import load_config
 
-def create_batch_payload(message_payloads: list) -> dict:
+def create_batch_payload(from_address: str, message_payloads: list) -> dict:
     """
     Assemble a batch payload from individual encrypted message payloads.
 
@@ -45,23 +45,23 @@ def create_batch_payload(message_payloads: list) -> dict:
     Returns:
         dict: Full batch payload ready for IPFS.
     """
-    config = load_config()
-    sender = config.get("active_address")
-    if not sender:
-        raise Exception("⚠️ Active address not set. Use 'evrmail addresses use <address or name>'.")
+    from evrmail.wallet.addresses.get_address import get_address
 
-    sender_info = config.get("addresses", {}).get(sender)
+    if not from_address:
+        raise Exception("⚠️ From address not set, cannot create batch payload.")
+
+    sender_info = get_address(from_address)
     if not sender_info:
-        raise Exception(f"⚠️ Address {sender} not found in config.")
+        raise Exception(f"⚠️ Address {from_address} is not found.")
 
-    sender_pubkey = sender_info.get("pubkey")
+    sender_pubkey = sender_info.get("public_key")
     if not sender_pubkey:
-        raise Exception(f"⚠️ No pubkey found for address {sender}.")
+        raise Exception(f"⚠️ No pubkey found for address {from_address}.")
 
     batch_payload = {
         "batch_id": str(uuid.uuid4()),
         "created": datetime.utcnow().isoformat() + "Z",
-        "sender": sender,
+        "sender": from_address,
         "sender_pubkey": sender_pubkey,
         "version": 1,
         "messages": message_payloads

@@ -9,6 +9,41 @@ import getpass
 import tarfile
 import urllib.request
 
+# evrmail/utils/ipfs.py
+
+import requests
+
+def fetch_ipfs_text(cid: str) -> str:
+    try:
+        # 🚀 Using public IPFS gateway
+        url = f"https://ipfs.io/ipfs/{cid}"
+        response = requests.get(url)
+        if response.ok:
+            return response.text
+        else:
+            return None
+    except Exception as e:
+        print(f"⚠️ IPFS fetch failed: {e}")
+        return None
+import requests
+import base64
+
+def fetch_ipfs_resource(cid: str) -> (str, str):
+    """
+    Fetch IPFS content. Returns (mime_type, data).
+    """
+    try:
+        url = f"https://ipfs.io/ipfs/{cid}"
+        response = requests.get(url)
+
+        if not response.ok:
+            return None, None
+
+        content_type = response.headers.get("Content-Type", "")
+        return content_type, response.content  # return raw bytes
+    except Exception as e:
+        print(f"⚠️ IPFS fetch failed: {e}")
+        return None, None
 
 def is_ipfs_installed():
     return shutil.which("ipfs") is not None

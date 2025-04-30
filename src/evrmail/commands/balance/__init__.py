@@ -28,7 +28,6 @@ import typer
 import json
 from typer import Option
 from evrmail import wallet
-from evrmail.wallet import rpc_client
 
 # 🚀 Typer App Init
 balance_app = typer.Typer()
@@ -50,6 +49,7 @@ def balance(
     """💳 Show EVR or asset balances from selected sources.
     """
 
+    from evrmail import rpc_client
     # 📬 Select Target Addresses
     if address:
         target_addresses = [address]

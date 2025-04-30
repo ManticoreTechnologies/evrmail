@@ -2,24 +2,27 @@
 # 🔢 evrmail addresses get
 #
 # 📌 USAGE:
-#   $ evrmail addresses get --wallet <name> --index <i>
-#   $ evrmail addresses get --outbox <asset>
-#   $ evrmail addresses get --address <addr>
-#   $ evrmail addresses get --raw ...
+#   $ evrmail addresses get <query>
+#   $ evrmail addresses get <query> --wallet <name>
+#   $ evrmail addresses get <query> --raw
 #
 # 🛠️ DESCRIPTION:
-#   Lookup address information:
-#   - Get address by wallet + index
-#   - Resolve public key info from asset outbox
-#   - Show metadata for a specific address
-#   - Combine with --raw to dump JSON
+#   Lookup address metadata using:
+#     - 📬 Full Address: global match across all wallets
+#     - 🔢 Index, 🧭 Path, 🏷️ Friendly Name: automatic global search via map
 # ─────────────────────────────────────────────────────────────
+
+"""
+ Tested:
+    - 📬 Full Address: global match across all wallets
+    - 🔢 Index, 🧭 Path, 🏷️ Friendly Name: automatic global search via map
+"""
 
 # 📦 Imports
 import typer
 import json
-from typer import Option
-from evrmail.wallet import utils, load_wallet
+from evrmail.wallet.addresses.get_address import get_address
+from typer import Argument, Option
 
 # 🚀 CLI App
 get_app = typer.Typer()
@@ -28,45 +31,28 @@ __all__ = ["get_app"]
 # ─────────────────────────────────────────────────────────────
 # 🔢 Get Address Command
 # ─────────────────────────────────────────────────────────────
-@get_app.command(name="get", help="🔎 Get address info by wallet, index, or outbox")
+@get_app.command(name="get", help="🔎 Lookup address metadata from a wallet or by full address")
 def get(
-    index: int = Option(None, "--index", help="🔢 Index within the wallet"),
-    wallet: str = Option(None, "--wallet", help="👛 Wallet to pull address from"),
-    outbox: str = Option(None, "--outbox", help="📦 Outbox asset (e.g., EVRMAIL#PHOENIX)"),
-    address: str = Option(None, "--address", help="🏷️ Get metadata for a specific address"),
+    query: str = Argument(..., help="🔍 Index, address, path, or friendly name"),
+    wallet: str = Option(None, "--wallet", "-w", help="👛 Wallet to search (optional, global search by default)"),
     raw: bool = Option(False, "--raw", help="📄 Output raw JSON")
 ):
-    """🔍 Fetch address information using wallet+index, outbox, or direct address lookup."""
+    """🔍 Fetch address metadata by any identifier (full global support via map)."""
 
-    result = None
+    index_query = int(query) if query.isdigit() else query
+    addr = get_address(index_query, wallet_name=wallet)
 
-    # 📦 Lookup by Outbox Asset
-    if outbox:
-        result = utils.get_address_info_by_address(utils.get_address_by_asset(outbox))
+    if not addr:
+        typer.echo(f"❌ No matching address found for: {query}")
+        raise typer.Exit(1)
 
-    # 🏷️ Lookup by direct address
-    elif address:
-        result = utils.get_address_info_by_address(address)
-
-    # 🔢 Index + Wallet lookup
-    elif wallet and index is not None:
-        result = {
-            "wallet": wallet,
-            "index": index,
-            "address": utils.get_address_by_index(wallet, index),
-            "path": utils.get_derivation_path(wallet, index),
-            "public_key": utils.get_public_key(wallet, index),
-        }
-
-    # ❌ Invalid input
-    else:
-        typer.echo("❌ Provide either --outbox, --wallet + --index, or --address")
-        raise typer.Exit(code=1)
-
-    # 📄 Raw JSON
     if raw:
-        typer.echo(json.dumps(result, indent=2))
+        typer.echo(json.dumps(addr, indent=2))
     else:
-        typer.echo("\n📬 Address Info:")
-        for key, value in result.items():
-            typer.echo(f"  ├─ {key}: {value}")
+        typer.echo("\n📬 Address Info:\n")
+        typer.echo(f"  🏷️  Friendly Name : {addr.get('friendly_name')}")
+        typer.echo(f"  🔢 Index         : {addr.get('index')}")
+        typer.echo(f"  🧭 Path          : {addr.get('path')}")
+        typer.echo(f"  📬 Address       : {addr.get('address')}")
+        typer.echo(f"  🔓 Public Key    : {addr.get('public_key')}")
+        typer.echo(f"  📦 Wallet        : {addr.get('wallet')}")

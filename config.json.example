@@ -1,0 +1,12 @@
+# This config file should be place in ~/.evrmail/config.json
+{
+  "ipfs_path": "/home/xoznir/.ipfs",
+  "ipfs_binary": "/usr/local/bin/ipfs",
+  "addresses": {},
+  "active_address": null,
+  "aliases": {},
+  "rpc_host": "tcp://77.90.40.55",
+  "rpc_port": 8819,
+  "rpc_user": "evruser",
+  "rpc_password": "changeThisToAStrongPassword123"
+}

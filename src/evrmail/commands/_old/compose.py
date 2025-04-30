@@ -1,8 +1,8 @@
-from evrmail.utils.sign_message import sign_message
+from evrmail.crypto import sign_message
 from evrmail.config import load_config
 from datetime import datetime
 from rich.panel import Panel
-from evrmail.cli import app
+from evrmail.cli import evrmail_cli_app
 from pathlib import Path
 from evrmail.utils.encrypt_message import encrypt_message_with_pubkey
 from evrmail.utils.decrypt_message import decrypt_message
@@ -31,7 +31,7 @@ def prompt_for_channel(label: str):
 
     return to_channel
 
-@app.command()
+@evrmail_cli_app.command()
 def compose():
     """Interactive minimal email composer for evrmail."""
     config = load_config()
@@ -86,8 +86,7 @@ def compose():
         # Add the message to ipfs
         cid = add_to_ipfs(encrypted)
         # send the message on the blockchain
-        from evrmore_rpc import EvrmoreClient
-        client = EvrmoreClient()
+        from evrmail import rpc_client as client
         txid = client.sendmessage(config['outbox'], cid)[0]
 
         print(f"[bold blue]🚀 Sent! [/bold blue][bold green]Transaction ID: {txid}[/bold green]")

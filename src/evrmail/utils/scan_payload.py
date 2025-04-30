@@ -11,8 +11,10 @@ def get_wallet_decryption_keys() -> Dict[str, str]:
     keymap = {}
     for name in list_wallets():
         wallet = load_wallet(name)
-        for entry in wallet.get("addresses", []):
-            keymap[entry["address"]] = entry.get("private_key")
+        addresses = wallet.get("addresses", [])
+        for address in addresses:
+            address_data = addresses[address]
+            keymap[address] = address_data.get("private_key")
     return keymap
 
 def scan_payload(cid: str) -> List[Dict[str, Any]]:
@@ -34,8 +36,34 @@ def scan_payload(cid: str) -> List[Dict[str, Any]]:
     messages = batch.get("messages", [])
     batch_id = batch.get("batch_id", "unknown")
     found_messages = []
+    
+    if type(messages) is list:
+        for message in messages:
+            msg = message
+            try:
+                print(f"[DEBUG] Message raw payload:\n{json.dumps(msg, indent=2)}")
+                to_address = msg.get("to")
 
-    for msg in messages:
+                if to_address in keymap:
+                    privkey = keymap[to_address]
+                    if not privkey:
+                        print(f"[yellow]⚠ No private key configured for address: {to_address}[/yellow]")
+                        continue
+                    if msg["encrypted"] == True:    
+                        decrypted = decrypt_message(msg, privkey)
+                    else:
+                        decrypted = msg
+                    msg["batch_id"] = batch_id
+                    found_messages.append({
+                        "to": to_address,
+                        "from": msg.get("from"),
+                        "content": decrypted,
+                        "raw": msg,
+                    })
+            except Exception as e:
+                print(f"[red]❌ Decryption failed for message to {msg.get('to', '<unknown>')}: {e}[/red]")
+    elif type(messages) is dict:
+        msg = messages
         try:
             print(f"[DEBUG] Message raw payload:\n{json.dumps(msg, indent=2)}")
             to_address = msg.get("to")
@@ -44,9 +72,10 @@ def scan_payload(cid: str) -> List[Dict[str, Any]]:
                 privkey = keymap[to_address]
                 if not privkey:
                     print(f"[yellow]⚠ No private key configured for address: {to_address}[/yellow]")
-                    continue
-
-                decrypted = decrypt_message(msg, privkey)
+                if msg["encrypted"] == True:    
+                    decrypted = decrypt_message(msg, privkey)
+                else:
+                    decrypted = msg
                 msg["batch_id"] = batch_id
                 found_messages.append({
                     "to": to_address,
@@ -56,6 +85,7 @@ def scan_payload(cid: str) -> List[Dict[str, Any]]:
                 })
         except Exception as e:
             print(f"[red]❌ Decryption failed for message to {msg.get('to', '<unknown>')}: {e}[/red]")
+
 
     if not found_messages:
         print(f"[blue]ℹ No messages matched your addresses in batch {cid}.[/blue]")

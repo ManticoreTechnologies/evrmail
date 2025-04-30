@@ -15,7 +15,7 @@
 import typer
 import os
 import json
-from evrmail.wallet import WALLET_DIR
+from evrmail.wallet import store
 
 # 🚀 Typer CLI app
 list_app = typer.Typer()
@@ -31,7 +31,7 @@ def list_wallets_command(
 
     wallet_names = [
         fname.replace(".json", "")
-        for fname in os.listdir(WALLET_DIR)
+        for fname in os.listdir(store.WALLET_DIR)
         if fname.endswith(".json")
     ]
 

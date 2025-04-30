@@ -22,7 +22,6 @@ from evrmore_rpc import EvrmoreClient
 import typer
 from typing import Optional
 from evrmail.wallet.tx.create.send_evr import create_send_evr_transaction
-from evrmail.wallet import rpc_client, addresses
 import json
 
 # 🚀 Typer App Init
@@ -42,6 +41,8 @@ def send(
     debug: bool = typer.Option(False, "--debug", help="🔋 Show raw transaction and debug info"),
     raw: bool = typer.Option(False, "--raw", help="📄 Output raw JSON (dry-run only)")
 ):
+    from evrmail import rpc_client
+    from evrmail.wallet import addresses
     if fee_rate:
         fee_rate = math.ceil(int(fee_rate * 1e8))
 
@@ -65,7 +66,8 @@ def send(
     if result and not raw:
         typer.echo(f"Transaction result: {result}")
         typer.echo(f"✅ Dry-run TXID: {result}")
-
+    
+    return result
 
 # ─────────────────────────────────────
 # 🔗 Send EVR Transaction
@@ -80,6 +82,7 @@ def send_evr_tx(
     raw: bool = False,
     fee_rate: int = 0
 ):
+    from evrmail import rpc_client
     # 💼 Convert amount to satoshis
     amount_sats = int(amount * 1e8)
 

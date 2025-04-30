@@ -66,7 +66,7 @@ def send_message(to_address: str, subject: str, content: str) -> str:
         print("Uploaded to IPFS:", cid)
 
         # Broadcast the message to the Evrmore blockchain using the active address
-        rpc = EvrmoreClient()
+        from evrmail import rpc_client as rpc
         txid = rpc.sendmessage(config["outbox"], cid, sender=active_address)
         print(f"Blockchain message transaction successfully sent: {txid[0]}")
         return txid[0]

@@ -6,15 +6,19 @@
 # ─────────────────────────────────────────────────────────────
 
 # 📦 Imports
-from evrmail.wallet.store import list_wallets, save_wallet, load_wallet
+from evrmail.wallet.store import list_wallets, load_wallet
 
-def get_all_addresses() -> list[str]:
+def get_all_addresses(include_meta: bool = False) -> list:
     all_addresses = []
     for name in list_wallets():
         wallet = load_wallet(name)
         if wallet:
-            addresses = wallet.get("addresses", [])
-            for addr in addresses:
-                all_addresses.append(addr["address"])
+            address_dict = wallet.get("addresses", {})
+            for addr_obj in address_dict.values():
+                if include_meta:
+                    addr_obj_with_wallet = addr_obj.copy()
+                    addr_obj_with_wallet["wallet"] = name
+                    all_addresses.append(addr_obj_with_wallet)
+                else:
+                    all_addresses.append(addr_obj["address"])
     return all_addresses
-

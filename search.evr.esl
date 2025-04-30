@@ -1,0 +1,9 @@
+{
+  "site_pubkey": "033a54931d46eb9b917e85c62a72cb4c4d72ceda0c6a66b7f98003f9fd0a813a16",
+  "site_title": "Search Evrmore",
+  "site_description": "The decentralized search engine for the Evrmore network.",
+  "site_version": "1.0",
+  "admin_asset": "SEARCH",
+  "content_type": "text/html",
+  "content_ipfs": "QmaAjF1uUT4dbcGn1gvD3ATJmqptQ8aFvrMAsQzABy9mP7"
+}

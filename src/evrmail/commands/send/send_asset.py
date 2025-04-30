@@ -23,7 +23,6 @@ import json
 import typer
 from typing import Optional
 from evrmore_rpc import EvrmoreClient
-from evrmail.wallet import rpc_client, addresses
 from evrmail.wallet.tx.create.send_asset import create_send_asset_transaction
 
 # 🚀 Typer App Init
@@ -41,6 +40,8 @@ def send(
     debug: bool = typer.Option(False, "--debug", help="🔍 Show debug info"),
     raw: bool = typer.Option(False, "--raw", help="📄 Output raw JSON (dry-run only)")
 ):
+    from evrmail import rpc_client
+    from evrmail.wallet import addresses
     if fee_rate:
         fee_rate = math.ceil(int(fee_rate * 1e8))  # EVR → satoshis
 
@@ -51,21 +52,24 @@ def send(
             typer.echo("❌ No wallet addresses found.")
             raise typer.Exit(code=1)
         from_address = all_addresses
+    try:
+        result = send_asset_tx(
+            to_address=to,
+            from_addresses=from_address,
+            asset_name=asset_name,
+            amount=amount,
+            dry_run=dry_run,
+            debug=debug,
+            raw=raw,
+            fee_rate=fee_rate
+        )
 
-    result = send_asset_tx(
-        to_address=to,
-        from_addresses=from_address,
-        asset_name=asset_name,
-        amount=amount,
-        dry_run=dry_run,
-        debug=debug,
-        raw=raw,
-        fee_rate=fee_rate
-    )
+        if result and not raw:
+            typer.echo(f"Transaction result: {result}")
+            typer.echo(f"✅ Dry-run TXID: {result}")
+    except Exception as e:
+        print(e)
 
-    if result and not raw:
-        typer.echo(f"Transaction result: {result}")
-        typer.echo(f"✅ Dry-run TXID: {result}")
 
 
 # ─────────────────────────────────────
@@ -81,6 +85,8 @@ def send_asset_tx(
     raw: bool = False,
     fee_rate: int = 1_000_000
 ):
+    from evrmail import rpc_client
+    from evrmail.wallet import addresses
     # 🔢 Asset amounts are int (use smallest unit)
     asset_qty = int(amount*1e8)
 

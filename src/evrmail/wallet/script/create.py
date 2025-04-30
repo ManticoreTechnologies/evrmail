@@ -79,6 +79,9 @@ def create_transfer_asset_script(pubkey_hash: bytes, asset_name: str, amount: in
             (amount).to_bytes(8, "little")  # fixed to 1
         )
 
+        if ipfs_cidv0:
+            multihash_bytes = custom_base58_decode(ipfs_cidv0)
+            asset_payload += multihash_bytes
         # Final script with OP_TRANSFER_OWNER (0x74)
         script = (
             bytes.fromhex("76a914") +
@@ -139,3 +142,37 @@ def create_issue_asset_script(pubkey_hash_hex: str, asset_name: str, amount: int
         asset_payload.hex()
     )
     return script
+
+from typing import Optional
+from evrmail.wallet.utils import encode_pushdata
+
+def create_swap_script(
+    hash_of_secret_hex: str,
+    recipient_pubkey_hash_hex: str,
+    refund_pubkey_hash_hex: str,
+    locktime: int,
+    asset_name: Optional[str] = None,
+    asset_amount: Optional[int] = None,
+    is_ownership_token: bool = False,
+    ipfs_cidv0: Optional[str] = None
+) -> str:
+    # Construct the asset payload
+    asset_payload = b'evr' + b't' + encode_pushdata(asset_name.encode()) + asset_amount.to_bytes(8, 'little')
+    if ipfs_cidv0:
+        asset_payload += custom_base58_decode(ipfs_cidv0)
+    asset_script = b'\xc0' + encode_pushdata(asset_payload) + b'\x75'  # OP_EVR_ASSET <data> OP_DROP
+
+    # Construct the HTLC script
+    htlc_script = (
+        b'\xa9' + b'\x14' + bytes.fromhex(hash_of_secret_hex) + b'\x87' +  # OP_HASH160 <hash> OP_EQUAL
+        b'\x63' +  # OP_IF
+            b'\x76\xa9\x14' + bytes.fromhex(recipient_pubkey_hash_hex) + b'\x88\xac' +  # P2PKH
+        b'\x67' +  # OP_ELSE
+            locktime.to_bytes(4, 'little') + b'\xb1\x75' +  # <locktime> OP_CHECKLOCKTIMEVERIFY OP_DROP
+            b'\x76\xa9\x14' + bytes.fromhex(refund_pubkey_hash_hex) + b'\x88\xac' +  # P2PKH
+        b'\x68'  # OP_ENDIF
+    )
+
+    # Combine asset script and HTLC script
+    full_script = asset_script + htlc_script
+    return full_script.hex()
