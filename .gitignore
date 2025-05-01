@@ -5,7 +5,3 @@ build/
 *.log
 *.pid
 *.egg-info
-game.evr.esl
-game.evr.html
-search.evr.esl
-search.evr.html

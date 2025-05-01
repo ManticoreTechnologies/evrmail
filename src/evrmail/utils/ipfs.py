@@ -44,7 +44,23 @@ def fetch_ipfs_resource(cid: str) -> (str, str):
     except Exception as e:
         print(f"⚠️ IPFS fetch failed: {e}")
         return None, None
+def fetch_ipns_resource(key: str) -> (str, str):
+    """
+    Fetch IPFS content. Returns (mime_type, data).
+    """
+    try:
+        url = f"https://ipfs.io/ipns/{key}"
+        response = requests.get(url)
 
+        if not response.ok:
+            return None, None
+
+        content_type = response.headers.get("Content-Type", "")
+        return content_type, response.content  # return raw bytes
+    except Exception as e:
+        print(f"⚠️ IPNS fetch failed: {e}")
+        return None, None
+    
 def is_ipfs_installed():
     return shutil.which("ipfs") is not None
 
