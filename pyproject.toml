@@ -15,7 +15,8 @@ dependencies = [
   "zmq",
   "mnemonic",
   "hdwallet",
-  "python-evrmorelib"
+  "python-evrmorelib",
+  "pyside6"
 ]
 readme = "README.md"
 requires-python = ">=3.10"
