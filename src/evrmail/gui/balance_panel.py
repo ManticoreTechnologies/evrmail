@@ -11,97 +11,129 @@ evrmail/gui/balance_panel.py
 © 2025 Manticore Technologies, LLC
 """
 
-from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QTableWidget, QTableWidgetItem, QHeaderView, QLineEdit
-)
-from PySide6.QtGui import QFont
-from PySide6.QtCore import Qt
+import flet as ft
 from evrmail.wallet.utils import calculate_balances
 
-def create_balance_tab(panel: QWidget) -> QWidget:
-    bal_tab = QWidget()
-    bal_layout = QVBoxLayout()
-    bal_tab.setLayout(bal_layout)
-
-    title = QLabel("💰 Wallet Balances")
-    title.setFont(QFont("Google Sans", 16, QFont.Medium))
-    title.setStyleSheet("color: white;")
-    bal_layout.addWidget(title)
-
+def create_balance_tab():
+    """Create the wallet balance tab with Flet components"""
+    
+    # Get balances from wallet
     balances = calculate_balances()
-
-    # ── EVR Total ──────────────────────────
+    
+    # Calculate total EVR balance
     total_evr = sum(balances["evr"].values()) / 1e8
-    self_total_label = QLabel(f"Total EVR: {total_evr:.8f}")
-    self_total_label.setFont(QFont("Google Sans", 14, QFont.Bold))
-    self_total_label.setStyleSheet("color: #4caf50; padding: 6px;")
-    bal_layout.addWidget(self_total_label)
-
-    # ── EVR Table ───────────────────────────
-    evr_table = QTableWidget()
-    evr_table.setColumnCount(2)
-    evr_table.setHorizontalHeaderLabels(["Address", "EVR Balance"])
-    evr_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-    evr_table.setStyleSheet("""
-        QTableWidget {
-            background-color: #181818;
-            color: white;
-            gridline-color: #333;
-        }
-        QHeaderView::section {
-            background-color: #2c2c2c;
-            color: #bbb;
-            font-weight: bold;
-            padding: 6px;
-        }
-    """)
-
+    
+    # Create total EVR balance display
+    total_balance = ft.Container(
+        content=ft.Text(
+            f"Total EVR: {total_evr:.8f}",
+            size=20,
+            color="#4caf50",
+            weight="bold",
+        ),
+        padding=10,
+        margin=ft.margin.only(bottom=10),
+    )
+    
+    # Create EVR balance table
+    evr_table = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("Address", weight="bold")),
+            ft.DataColumn(ft.Text("EVR Balance", weight="bold"), numeric=True),
+        ],
+        border=ft.border.all(color="#333", width=1),
+        border_radius=8,
+        vertical_lines=ft.border.BorderSide(1, "#333"),
+        horizontal_lines=ft.border.BorderSide(1, "#333"),
+        column_spacing=50,
+        heading_row_color=ft.colors.with_opacity(0.2, "#2c2c2c"),
+        heading_row_height=50,
+        data_row_min_height=40,
+        width=10000,  # Force full width
+    )
+    
+    # Add EVR balance rows
     evr_rows = list(balances["evr"].items())
-    evr_table.setRowCount(len(evr_rows))
-    for row, (address, amount) in enumerate(evr_rows):
-        evr_table.setItem(row, 0, QTableWidgetItem(address))
-        evr_table.setItem(row, 1, QTableWidgetItem(f"{amount / 1e8:.8f}"))
-
-    evr_table.setSortingEnabled(True)
-
-    bal_layout.addWidget(QLabel("🔵 EVR Balances"))
-    bal_layout.addWidget(evr_table)
-
-    # ── Asset Table ─────────────────────────
-    asset_table = QTableWidget()
-    asset_table.setColumnCount(3)
-    asset_table.setHorizontalHeaderLabels(["Asset", "Address", "Amount"])
-    asset_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-    asset_table.setStyleSheet("""
-        QTableWidget {
-            background-color: #181818;
-            color: white;
-            gridline-color: #333;
-        }
-        QHeaderView::section {
-            background-color: #2c2c2c;
-            color: #bbb;
-            font-weight: bold;
-            padding: 6px;
-        }
-    """)
-
+    for address, amount in evr_rows:
+        evr_table.rows.append(
+            ft.DataRow(
+                cells=[
+                    ft.DataCell(ft.Text(address)),
+                    ft.DataCell(ft.Text(f"{amount / 1e8:.8f}", text_align=ft.TextAlign.END)),
+                ]
+            )
+        )
+    
+    # Create asset balance table
+    asset_table = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("Asset", weight="bold")),
+            ft.DataColumn(ft.Text("Address", weight="bold")),
+            ft.DataColumn(ft.Text("Amount", weight="bold"), numeric=True),
+        ],
+        border=ft.border.all(color="#333", width=1),
+        border_radius=8,
+        vertical_lines=ft.border.BorderSide(1, "#333"),
+        horizontal_lines=ft.border.BorderSide(1, "#333"),
+        column_spacing=50,
+        heading_row_color=ft.colors.with_opacity(0.2, "#2c2c2c"),
+        heading_row_height=50,
+        data_row_min_height=40,
+        width=10000,  # Force full width
+    )
+    
+    # Add asset balance rows
     asset_rows = []
     for asset_name, addr_map in balances["assets"].items():
         for address, amount in addr_map.items():
             asset_rows.append((asset_name, address, amount / 1e8))
-
-    asset_table.setRowCount(len(asset_rows))
-    for row, (asset, address, amount) in enumerate(asset_rows):
-        asset_table.setItem(row, 0, QTableWidgetItem(asset))
-        asset_table.setItem(row, 1, QTableWidgetItem(address))
-        asset_table.setItem(row, 2, QTableWidgetItem(f"{amount:.8f}"))
-
-    asset_table.setSortingEnabled(True)
-
-    bal_layout.addWidget(QLabel("🟠 Asset Balances"))
-    bal_layout.addWidget(asset_table)
-
-    bal_layout.addStretch()
-
-    return bal_tab
+    
+    for asset, address, amount in asset_rows:
+        asset_table.rows.append(
+            ft.DataRow(
+                cells=[
+                    ft.DataCell(ft.Text(asset)),
+                    ft.DataCell(ft.Text(address)),
+                    ft.DataCell(ft.Text(f"{amount:.8f}", text_align=ft.TextAlign.END)),
+                ]
+            )
+        )
+    
+    # Create the complete layout
+    balance_tab = ft.Container(
+        content=ft.Column(
+            [
+                ft.Text("💰 Wallet Balances", size=24, color="white", weight="bold"),
+                total_balance,
+                ft.Text("🔵 EVR Balances", size=16, color="white"),
+                ft.Container(
+                    content=evr_table,
+                    alignment=ft.alignment.center,
+                    margin=ft.margin.only(bottom=20),
+                    border_radius=8,
+                ),
+                ft.Text("🟠 Asset Balances", size=16, color="white"),
+                ft.Container(
+                    content=asset_table,
+                    alignment=ft.alignment.center,
+                    margin=ft.margin.only(bottom=20),
+                    border_radius=8,
+                ),
+            ],
+            spacing=10,
+            scroll="auto",
+            expand=True,
+        ),
+        padding=20,
+        expand=True,
+    )
+    
+    # Add delayed_init method to handle table updates after panel is added to the page
+    def delayed_init():
+        """Update tables after the panel is added to the page"""
+        # No need to do anything special since we're not calling update()
+        pass
+    
+    balance_tab.delayed_init = delayed_init
+    
+    return balance_tab

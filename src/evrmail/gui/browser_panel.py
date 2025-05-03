@@ -1,19 +1,14 @@
 # evrmail/gui/browser_panel.py
 
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QLabel, QHBoxLayout
-from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QUrl
+import flet as ft
+from pathlib import Path
 from evrmail.utils.ipfs import fetch_ipfs_json, fetch_ipfs_resource, fetch_ipns_resource
 from evrmail import rpc_client
 import base64
-import ecdsa
 import hashlib
-from pathlib import Path
-import base58
-import base64
-from hashlib import sha256
 from Crypto.Hash import RIPEMD160
-from coincurve import PrivateKey, PublicKey
+import base58
+
 NO_SITE_FOUND_PATH = Path(__file__).parent / "no_payload.html"
 
 def load_no_site_found_html() -> str:
@@ -23,121 +18,211 @@ def load_no_site_found_html() -> str:
         return "<h1>❌ Site not found</h1><p>Missing no_payload.html</p>"
 
 NO_SITE_FOUND = load_no_site_found_html()
+
 def pubkey_to_address(pubkey: bytes) -> str:
     """
     Hash160 + base58 for Evrmore P2PKH (prefix=0x21 => 'E').
     """
-    h = sha256(pubkey).digest()
+    h = hashlib.sha256(pubkey).digest()
     r160 = RIPEMD160.new(h).digest()
     versioned = b'\x21' + r160  # 0x21 => "E"
-    checksum = sha256(sha256(versioned).digest()).digest()[:4]
+    checksum = hashlib.sha256(hashlib.sha256(versioned).digest()).digest()[:4]
     return base58.b58encode(versioned + checksum).decode()
 
-def base58_encode(b: bytes) -> str:
-    alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
-    num = int.from_bytes(b, 'big')
-    encode = ''
-    while num > 0:
-        num, rem = divmod(num, 58)
-        encode = alphabet[rem] + encode
-    # Handle leading zeros
-    pad = 0
-    for byte in b:
-        if byte == 0:
-            pad += 1
-        else:
-            break
-    return '1' * pad + encode
-
-def create_browser_panel() -> QWidget:
-    panel = QWidget()
-    panel.setStyleSheet("background-color: #121212; color: #eeeeee;")
-
-    main_layout = QVBoxLayout(panel)
-    main_layout.setContentsMargins(0, 0, 0, 0)
-    main_layout.setSpacing(0)
-
-    # Top bar
-    top_bar = QHBoxLayout()
-    url_bar = QLineEdit()
-    url_bar.setPlaceholderText("🔎 Enter EvrNet domain (e.g. chess.evr)...")
-    url_bar.setStyleSheet("""
-        QLineEdit {
-            background-color: #1e1e1e;
-            color: #eeeeee;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 16px;
-            border: 1px solid #3ea6ff;
-        }
-    """)
-
-    esl_status = QLabel("")
-    esl_status.setStyleSheet("color: #3ea6ff; font-weight: bold; padding-left: 12px; font-size: 14px;")
-
-    top_bar.addWidget(url_bar)
-    top_bar.addWidget(esl_status)
-    main_layout.addLayout(top_bar)
-
-    # Web display
-    browser = QWebEngineView()
-    browser.setStyleSheet("background-color: #111111;")
-    main_layout.addWidget(browser)
-
-    def load_url():
-        text = url_bar.text().strip()
-
+def create_browser_panel():
+    """Create a simplified browser panel for Evrnet domains"""
+    
+    # URL input field
+    url_bar = ft.TextField(
+        hint_text="🔎 Enter EvrNet domain (e.g. chess.evr)...",
+        border_color="#3ea6ff",
+        expand=True,
+        border_radius=8,
+        prefix_icon=ft.icons.SEARCH,
+    )
+    
+    # ESL status display
+    esl_status = ft.Text(
+        value="",
+        color="#3ea6ff",
+        weight="bold",
+        size=14,
+    )
+    
+    # Content display area (since we can't use a real browser in Flet)
+    content_display = ft.Container(
+        content=ft.Column(
+            [
+                ft.Text("Enter an Evrmore domain above to browse", 
+                       color="#ccc", 
+                       text_align=ft.TextAlign.CENTER,
+                       size=18),
+                ft.Text("Example: chess.evr", 
+                        color="#3ea6ff", 
+                        text_align=ft.TextAlign.CENTER),
+            ],
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+        ),
+        alignment=ft.alignment.center,
+        bgcolor="#121212",
+        border_radius=8,
+        expand=True,
+        border=ft.border.all(color="#333", width=1),
+    )
+    
+    def load_url(e=None):
+        """Handle loading a domain from the URL bar"""
+        text = url_bar.value.strip() if url_bar.value else ""
+        
+        # Clear current content
+        content_display.content = ft.Column(
+            alignment=ft.MainAxisAlignment.CENTER,
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            expand=True,
+        )
+        
         if text.endswith(".evr"):
             domain = text[:-4]
-            esl_status.setText("⏳ Loading...")
+            esl_status.value = "⏳ Loading..."
+            esl_status.update()
+            
             try:
+                # Get asset data from the blockchain
                 asset_data = rpc_client.getassetdata(domain.upper())
                 if not asset_data.get("has_ipfs"):
-                    browser.setHtml(NO_SITE_FOUND)
-                    esl_status.setText("❌ No IPFS payload")
+                    content_display.content = ft.Column(
+                        [
+                            ft.Icon(ft.icons.ERROR, color="red", size=40),
+                            ft.Text("No IPFS payload found", color="white", size=20),
+                            ft.Text(f"The domain {text} exists but has no content", color="#ccc"),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        spacing=10,
+                    )
+                    esl_status.value = "❌ No IPFS payload"
+                    esl_status.update()
+                    content_display.update()
                     return
-
+                
+                # Get ESL payload from IPFS
                 cid = asset_data.get("ipfs_hash")
                 esl_payload = fetch_ipfs_json(cid)
                 if not esl_payload:
-                    browser.setHtml(f"<h1>❌ ESL not found for {domain}.evr</h1>")
-                    esl_status.setText("❌ Invalid ESL")
+                    content_display.content = ft.Column(
+                        [
+                            ft.Icon(ft.icons.ERROR, color="red", size=40),
+                            ft.Text(f"ESL not found for {domain}.evr", color="white", size=20),
+                        ],
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    )
+                    esl_status.value = "❌ Invalid ESL"
+                    esl_status.update()
+                    content_display.update()
                     return
-
+                
+                # Verify ESL ownership
                 pubkey = esl_payload.get("site_pubkey")
                 admin_asset = esl_payload.get("admin_asset") + "!"
                 expected_address = pubkey_to_address(bytes.fromhex(pubkey))
                 owners = rpc_client.listaddressesbyasset(admin_asset)
+                
                 if expected_address in owners:
-                    esl_status.setText("🛡️ ESL Verified")
+                    esl_status.value = "🛡️ ESL Verified"
                 else:
-                    esl_status.setText("⚠️ ESL Unverified")
-
-                # Load site content
+                    esl_status.value = "⚠️ ESL Unverified"
+                esl_status.update()
+                
+                # Show content info
                 content_ipns = esl_payload.get("content_ipns")
                 content_cid = esl_payload.get("content_ipfs")
-                content_type, data = (
-                    fetch_ipns_resource(content_ipns)
-                    if content_ipns else
-                    fetch_ipfs_resource(content_cid)
+                
+                # In a real implementation, we would fetch and display the content
+                # Here we just show placeholder info
+                content_display.content = ft.Column(
+                    [
+                        ft.Text(f"Domain: {text}", size=20, color="white"),
+                        ft.Text(f"IPFS Asset CID: {cid[:20]}...", color="#ccc"),
+                        ft.Text(f"Content {'IPNS' if content_ipns else 'IPFS'}: " + 
+                                f"{content_ipns[:20] + '...' if content_ipns else content_cid[:20] + '...'}",
+                                color="#ccc"),
+                        ft.Container(height=20),
+                        ft.Icon(ft.icons.WEB, color="#3ea6ff", size=40),
+                        ft.Text("Content would be displayed here", color="white", size=16),
+                        ft.Text("Flet doesn't have a built-in web browser component", color="#ccc"),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=10,
                 )
-
-                if content_type.startswith("text/html"):
-                    browser.setHtml(data.decode('utf-8'))
-                elif content_type.startswith("image/"):
-                    b64 = base64.b64encode(data).decode('utf-8')
-                    html = f"<html><body style='background:black;'><img src='data:{content_type};base64,{b64}' style='width:100%;height:auto;object-fit:contain;'/></body></html>"
-                    browser.setHtml(html)
-                else:
-                    browser.setHtml(f"<h1>⚠ Unsupported type: {content_type}</h1>")
+                content_display.update()
+                
             except Exception as e:
-                browser.setHtml(f"<h1>❌ Failed to load {text}</h1><pre>{e}</pre>")
-                esl_status.setText("❌ Load failed")
+                content_display.content = ft.Column(
+                    [
+                        ft.Icon(ft.icons.ERROR, color="red", size=40),
+                        ft.Text(f"Failed to load {text}", color="white", size=20),
+                        ft.Text(str(e), color="#ccc"),
+                    ],
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=10,
+                )
+                esl_status.value = "❌ Load failed"
+                esl_status.update()
+                content_display.update()
         else:
+            # For non-EVR domains, just show a message
             url = text if text.startswith("http") else f"https://{text}"
-            browser.setUrl(QUrl(url))
-            esl_status.setText("🌐 Web URL")
-
-    url_bar.returnPressed.connect(load_url)
-    browser.setUrl(QUrl("https://duckduckgo.com"))
+            content_display.content = ft.Column(
+                [
+                    ft.Icon(ft.icons.WEB, color="#3ea6ff", size=40),
+                    ft.Text("External Web Content", color="white", size=20),
+                    ft.Text(f"URL: {url}", color="#ccc"),
+                    ft.Text("Flet doesn't have a built-in web browser component", color="#ccc"),
+                ],
+                alignment=ft.MainAxisAlignment.CENTER,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                spacing=10,
+            )
+            esl_status.value = "🌐 Web URL"
+            esl_status.update()
+            content_display.update()
+    
+    # Connect the enter key to the load function
+    url_bar.on_submit = load_url
+    
+    # Create a refresh button
+    refresh_button = ft.IconButton(
+        icon=ft.icons.REFRESH,
+        tooltip="Refresh",
+        on_click=load_url,
+    )
+    
+    # Top bar with URL input and status
+    top_bar = ft.Row(
+        [
+            url_bar,
+            refresh_button,
+            esl_status,
+        ],
+        spacing=10,
+    )
+    
+    # Combine everything into the panel
+    panel = ft.Container(
+        content=ft.Column(
+            [
+                top_bar,
+                content_display,
+            ],
+            spacing=10,
+            expand=True,
+        ),
+        padding=20,
+        expand=True,
+    )
+    
     return panel

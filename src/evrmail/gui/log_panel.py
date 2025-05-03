@@ -1,50 +1,49 @@
 # evrmail/gui/log_panel.py
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QTextEdit, QPushButton, QLabel
-from PySide6.QtGui import QFont
-from PySide6.QtCore import Qt
+import flet as ft
 
-def create_log_panel() -> QWidget:
-    panel = QWidget()
-    layout = QVBoxLayout(panel)
-    layout.setContentsMargins(32, 32, 32, 32)
-    layout.setSpacing(16)
-
-    title = QLabel("📜 EvrMail Logs")
-    title.setFont(QFont("Google Sans", 18, QFont.Medium))
-    title.setStyleSheet("color: white;")
-    layout.addWidget(title)
-
-    log_output = QTextEdit()
-    log_output.setReadOnly(True)
-    log_output.setStyleSheet("""
-        QTextEdit {
-            background-color: #121212;
-            color: #ccc;
-            font-family: Consolas, monospace;
-            font-size: 13px;
-            border: 1px solid #333;
-            border-radius: 8px;
-        }
-    """)
-    layout.addWidget(log_output)
-
-    clear_btn = QPushButton("🧹 Clear Logs")
-    clear_btn.setStyleSheet("""
-        QPushButton {
-            padding: 8px 16px;
-            border: none;
-            background-color: #3c3c3c;
-            color: white;
-            border-radius: 6px;
-        }
-        QPushButton:hover {
-            background-color: #555;
-        }
-    """)
-    clear_btn.clicked.connect(log_output.clear)
-    layout.addWidget(clear_btn, alignment=Qt.AlignRight)
-
-    # 🔥 Attach direct access
+def create_log_panel():
+    """Create the logs panel with Flet"""
+    
+    log_output = ft.TextField(
+        multiline=True,
+        read_only=True,
+        value="",
+        min_lines=20,
+        expand=True,
+        text_size=13,
+        color="#ccc",
+        bgcolor="#121212",
+        border_color="#333",
+        border_radius=8,
+    )
+    
+    def clear_logs(e):
+        log_output.value = ""
+        log_output.update()
+    
+    panel = ft.Container(
+        content=ft.Column(
+            [
+                ft.Text("📜 EvrMail Logs", size=24, color="white", weight="bold"),
+                log_output,
+                ft.Container(
+                    content=ft.ElevatedButton(
+                        "🧹 Clear Logs",
+                        on_click=clear_logs,
+                        bgcolor="#3c3c3c",
+                        color="white",
+                    ),
+                    alignment=ft.alignment.bottom_right,
+                ),
+            ],
+            spacing=16,
+            expand=True,
+        ),
+        padding=32,
+        expand=True,
+    )
+    
+    # Attach the log output field to the panel for external access
     panel.log_output = log_output
-
+    
     return panel
