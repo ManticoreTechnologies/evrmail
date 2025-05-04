@@ -23,7 +23,7 @@ encrypted IPFS metadata, and peer-to-peer message forwarding.
 # ─── 🧩 MODULE IMPORTS ──────────────────────────────────────────────────────────
 
 # 🌐 CLI entrypoint and configuration loader
-from .cli import evrmail_cli_app, evrmail_qt_app
+from .cli import evrmail_cli_app, evrmail_flet_app
 from .config import load_config
 
 # 🔌 Evrmore RPC and ZeroMQ clients
@@ -81,9 +81,9 @@ def main():
     """Launch the EvrMail CLI app."""
     evrmail_cli_app()
 
-def qt():
+def flet():
     """ Launch qt app """
-    evrmail_qt_app()
+    evrmail_flet_app()
 
 # 🧪 Allow `python -m evrmail` to work
 if __name__ == "__main__":

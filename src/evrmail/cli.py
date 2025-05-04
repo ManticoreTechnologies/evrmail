@@ -4,7 +4,7 @@
 A secure, blockchain-native messaging protocol powered by asset channels, 
 encrypted IPFS metadata, and peer-to-peer message forwarding.
 
-🔧 Developer: EQTL7gMLYkuu9CfHcRevVk3KdnG5JgruSE (Cymos)  
+🔧 Developer: EfletL7gMLYkuu9CfHcRevVk3KdnG5JgruSE (Cymos)  
 🏢 For: EfddmqXo4itdu2TbiFEvuDZeUvkFC7dkGD (Manticore Technologies, LLC)  
 © 2025 Manticore Technologies, LLC
 """
@@ -49,9 +49,9 @@ A secure, blockchain-native messaging system powered by asset channels and encry
 )
 
 # --- Sub CLI App (Gui mode)
-evrmail_qt_app = typer.Typer()
-@evrmail_qt_app.command(name="evrmail-qt", help="Start the gui for evrmail")
-def start_evrmail_qt():
+evrmail_flet_app = typer.Typer()
+@evrmail_flet_app.command(name="evrmail-flet", help="Start the gui for evrmail")
+def start_evrmail_flet():
     from evrmail.gui.main import run_gui  # this should start your GUI window
     print("To be implemented!")
     run_gui()
@@ -72,6 +72,6 @@ def main():
         sys.argv.append("--help")
     evrmail_cli_app()
 
-def qt():
-    evrmail_qt_app()
+def flet():
+    evrmail_flet_app()
     
