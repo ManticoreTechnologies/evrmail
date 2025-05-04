@@ -57,27 +57,40 @@ def create_log_panel():
         ft.Checkbox(label="Wallet", value=True, fill_color=category_colors[WALLET], check_color="#000000", data=WALLET),
         ft.Checkbox(label="Chain", value=True, fill_color=category_colors[CHAIN], check_color="#000000", data=CHAIN),
         ft.Checkbox(label="Network", value=True, fill_color=category_colors[NETWORK], check_color="#000000", data=NETWORK),
+        ft.Checkbox(label="Debug", value=True, fill_color=category_colors[DEBUG], check_color="#000000", data=DEBUG),
     ], alignment=ft.MainAxisAlignment.CENTER)
     
     # Log level dropdown
     log_level = ft.Dropdown(
-        width=150,
+        width=180,
         options=[
-            ft.dropdown.Option("debug", text="Debug (All)"),
-            ft.dropdown.Option("info", text="Info (Normal)"),
-            ft.dropdown.Option("warning", text="Warnings"),
-            ft.dropdown.Option("error", text="Errors Only"),
+            ft.dropdown.Option("debug", text="🔍 Debug (All)"),
+            ft.dropdown.Option("info", text="ℹ️ Info (Normal)"),
+            ft.dropdown.Option("warning", text="⚠️ Warnings"),
+            ft.dropdown.Option("error", text="❌ Errors Only"),
+            ft.dropdown.Option("critical", text="🔥 Critical Only"),
         ],
         value="info",
+        bgcolor="#2A2A2A",
+        color="#ffffff",
+        border_color="#555",
+        focused_border_color="#00e0b6",
+        label="Log Level",
+        label_style=ft.TextStyle(color="#aaaaaa"),
     )
     
     # Log filter input
     filter_input = ft.TextField(
         label="Filter logs",
         width=250,
-        border_color="#333",
-        color="#ccc",
-        hint_text="Enter text to filter logs"
+        border_color="#555",
+        color="#ffffff",
+        bgcolor="#2A2A2A",
+        focused_border_color="#00e0b6",
+        label_style=ft.TextStyle(color="#aaaaaa"),
+        hint_text="Enter text to filter logs",
+        hint_style=ft.TextStyle(color="#777777"),
+        text_size=13
     )
     
     # Function to filter logs
@@ -154,10 +167,22 @@ def create_log_panel():
                 cat_color = category_colors.get(cat, "#FFFFFF")
                 level_color = level_colors.get(level_name, "#FFFFFF")
                 
+                # Get level icon and colors
+                level_icons = {
+                    "debug": "🔍 DEBUG",
+                    "info": "ℹ️ INFO",
+                    "warning": "⚠️ WARN",
+                    "error": "❌ ERROR",
+                    "critical": "🔥 CRIT"
+                }
+                level_icon = level_icons.get(level_name, "ℹ️ INFO")
+                
                 # Create row with colored components - using proper color coding based on category and level
                 log_row = ft.Row([
                     # Timestamp in gray
                     ft.Text(f"[{timestamp}]", color="#A0A0A0", size=13),
+                    # Level indicator with level-based coloring
+                    ft.Text(f"{level_icon}", color=level_color, size=13, weight="bold"),
                     # Category label with category-specific color
                     ft.Text(f"[{cat_label}]", color=cat_color, size=13, weight="bold"),
                     # Message with level-based coloring
@@ -244,16 +269,18 @@ def create_log_panel():
     filter_button = ft.ElevatedButton(
         "🔍 Apply Filter",
         on_click=apply_filters,
-        bgcolor="#3c3c3c",
+        bgcolor="#2A2A2A",
         color="white",
+        icon=ft.icons.FILTER_ALT,
     )
     
     # Add clear button
     clear_button = ft.ElevatedButton(
         "🧹 Clear Logs",
         on_click=clear_logs,
-        bgcolor="#3c3c3c",
+        bgcolor="#2A2A2A",
         color="white",
+        icon=ft.icons.CLEANING_SERVICES,
     )
     
     # Add save button to export logs
@@ -283,22 +310,27 @@ def create_log_panel():
     save_button = ft.ElevatedButton(
         "💾 Save Logs",
         on_click=save_logs,
-        bgcolor="#3c3c3c",
+        bgcolor="#2A2A2A",
         color="white",
+        icon=ft.icons.SAVE,
     )
     
     # Save message
-    save_msg = ft.Text("", color="#00e0b6", visible=False)
+    save_msg = ft.Text("", color="#00e0b6", visible=False, size=13)
     
-    # Create control bar
-    control_bar = ft.Row([
-        ft.Text("Level:", color="#ccc"),
+    # Create filter bar
+    filter_bar = ft.Row([
+        ft.Text("Level:", color="#ccc", size=13),
         log_level,
         filter_input,
+    ], alignment=ft.MainAxisAlignment.START)
+    
+    # Create button bar
+    button_bar = ft.Row([
         filter_button,
         clear_button,
         save_button,
-    ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN)
+    ], alignment=ft.MainAxisAlignment.END)
     
     # Create the panel
     panel = ft.Container(
@@ -306,7 +338,11 @@ def create_log_panel():
             [
                 ft.Text("📜 EvrMail Logs", size=24, color="white", weight="bold"),
                 category_row,
-                control_bar,
+                ft.Row([
+                    filter_bar,
+                    ft.Container(width=20),  # Spacer
+                    button_bar,
+                ], alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 save_msg,
                 log_container,
             ],
