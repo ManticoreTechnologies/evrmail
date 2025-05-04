@@ -7,6 +7,13 @@ import time
 from pathlib import Path
 import threading
 import re
+import logging
+
+# Import logger
+from evrmail.utils import (
+    configure_logging, register_callback, daemon as daemon_log, gui as gui_log,
+    APP, GUI, DAEMON, WALLET, CHAIN, NETWORK, DEBUG
+)
 
 # Import modules
 from evrmail.daemon import start_daemon_threaded
@@ -29,54 +36,65 @@ class EvrMailApp:
         self.daemon_started = False
         self.current_view = None
         
+        # Configure logging for the app at startup
+        configure_logging(level=logging.INFO)
+        
     def _flush_log_queue(self, e=None):
         """Process any pending log messages in the queue"""
-        if self.log_output:
-            while not self.log_queue.empty():
-                line = self.log_queue.get()
-                self.log_output.value += f"{line}\n"
-                self.log_output.update()
-                
-                # Check for successful daemon startup with more conditions
-                daemon_ready_patterns = [
-                    "✅ Daemon listening for transactions",
-                    "Reloading known addresses",
-                    "Block processed with",
-                    "daemon ready"
-                ]
-                
-                if not self.daemon_started and any(pattern in line.lower() for pattern in daemon_ready_patterns):
-                    print("Daemon appears to be ready, transitioning to inbox")
-                    self.daemon_started = True
-                    self.page.go("/inbox")
+        try:
+            if self.log_output and hasattr(self.log_output, "page") and self.log_output.page:
+                while not self.log_queue.empty():
+                    line = self.log_queue.get()
+                    self.log_output.value += f"{line}\n"
+                    self.log_output.update()
+                    
+                    # Check for successful daemon startup with more conditions
+                    daemon_ready_patterns = [
+                        "Daemon listening for transactions",
+                        "Reloading known addresses",
+                        "Block processed with",
+                        "daemon ready"
+                    ]
+                    
+                    if not self.daemon_started and any(pattern in line.lower() for pattern in daemon_ready_patterns):
+                        gui_log("info", "Daemon appears to be ready, transitioning to inbox")
+                        self.daemon_started = True
+                        self.page.go("/inbox")
+        except Exception as e:
+            # Silently ignore errors if the control isn't properly initialized
+            pass
             
-            # Schedule the next update
-            if hasattr(self, "log_timer_running") and self.log_timer_running:
-                threading.Timer(0.25, self._flush_log_queue).start()
+        # Schedule the next update
+        if hasattr(self, "log_timer_running") and self.log_timer_running:
+            threading.Timer(0.25, self._flush_log_queue).start()
 
     def _append_log(self, msg: str):
         """Add a log message to the queue and log panel if available"""
         self.log_queue.put(msg)
         
-        # Check if we have a log panel initialized with a log output
-        if hasattr(self, "log_panel") and hasattr(self.log_panel, "log_output"):
-            self.log_panel.log_output.value += f"{msg}\n"
-            self.log_panel.log_output.update()
+        # Store logs in the log panel if it's already created and visible
+        if hasattr(self, "log_panel") and hasattr(self.log_panel, "log_entries"):
+            # The log callback in log_panel will handle this automatically
+            pass
 
     def _start_background_daemon(self):
         """Start the EvrMail daemon in a background thread"""
+        gui_log("info", "Starting EvrMail daemon...")
+        
+        # Process messages from the daemon
         def log_callback(msg):
             self._append_log(msg)
+            
             # Check for successful daemon startup with more conditions
             daemon_ready_patterns = [
-                "✅ Daemon listening for transactions",
+                "Daemon listening for transactions",
                 "Reloading known addresses",
                 "Block processed with",
                 "daemon ready"
             ]
             
             if not self.daemon_started and any(pattern in msg.lower() for pattern in daemon_ready_patterns):
-                print("Daemon startup detected from callback, transitioning to inbox")
+                gui_log("info", "Daemon startup detected from callback, transitioning to inbox")
                 self.daemon_started = True
                 # Switch to inbox view after daemon starts
                 if self.page:
@@ -85,7 +103,7 @@ class EvrMailApp:
         # Set a timeout to force transition to inbox after 10 seconds
         def force_start_timeout():
             if not self.daemon_started:
-                print("Forcing transition to inbox after timeout")
+                gui_log("warning", "Forcing transition to inbox after timeout")
                 self.daemon_started = True
                 if self.page:
                     self.page.go("/inbox")
@@ -93,7 +111,8 @@ class EvrMailApp:
         # Schedule the timeout
         threading.Timer(10.0, force_start_timeout).start()
         
-        start_daemon_threaded(log_callback=log_callback)
+        # Start the daemon with our logger already configured
+        start_daemon_threaded(log_callback=log_callback, debug_mode=False)
 
     def create_loading_view(self):
         """Create the loading view shown during daemon startup"""
@@ -206,12 +225,14 @@ class EvrMailApp:
             )
             self.page.views.append(view)
             self.page.update()
+            gui_log("info", "Displayed loading screen")
             return
         
         # Get navigation rail and select the right tab
         self.nav_rail = self.create_navigation_rail()
         
         # Set content based on route
+        gui_log("info", f"Navigating to route: {route_path}")
         if route_path == "/inbox":
             self.nav_rail.selected_index = 0
             view_content = self.inbox_panel
@@ -230,6 +251,7 @@ class EvrMailApp:
         elif route_path == "/logs":
             self.nav_rail.selected_index = 5
             view_content = self.log_panel
+            gui_log("info", "Switching to logs panel")
         else:
             self.nav_rail.selected_index = 0
             view_content = self.inbox_panel
@@ -277,8 +299,13 @@ class EvrMailApp:
         self.page.update()
         
         # Call the delayed_init function if it exists on the current panel
-        if hasattr(view_content, "delayed_init"):
-            view_content.delayed_init()
+        try:
+            if hasattr(view_content, "delayed_init"):
+                gui_log("info", f"Calling delayed_init for {route_path}")
+                view_content.delayed_init()
+                gui_log("info", f"delayed_init completed for {route_path}")
+        except Exception as e:
+            gui_log("error", f"Error in delayed_init: {str(e)}")
 
     def toggle_maximize(self, e=None):
         """Toggle between maximized and normal window state"""
@@ -287,7 +314,23 @@ class EvrMailApp:
 
     def exit_app(self, e=None):
         """Exit the application"""
+        gui_log("info", "Exiting application")
+        
+        # Set a flag to indicate we're shutting down
+        self.page._closing = True
+        
+        # Stop the log timer first
         self.log_timer_running = False
+        
+        # Clean up log panel if it exists
+        if hasattr(self, "log_panel") and hasattr(self.log_panel, "cleanup"):
+            try:
+                self.log_panel.cleanup()
+                gui_log("info", "Log panel cleanup completed")
+            except Exception as e:
+                gui_log("error", f"Error cleaning up log panel: {e}")
+                
+        # Close the window after cleanup
         self.page.window_close()
 
     def minimize_to_tray(self, e=None):
@@ -320,7 +363,7 @@ class EvrMailApp:
         global_scope["page"] = page
         
         # Initialize panels - passing the page to each one
-        self.log_panel = create_log_panel()
+        gui_log("info", "Initializing application panels")
         
         # Create a temporary view to hold the loading screen
         # This ensures the page exists before we initialize other panels
@@ -344,6 +387,20 @@ class EvrMailApp:
         self.wallet_panel = create_wallet_panel()
         self.browser_panel = create_browser_panel()
         self.settings_panel = create_settings_panel()
+        
+        # Explicitly initialize the log panel with debugging
+        gui_log("info", "Initializing log panel")
+        try:
+            self.log_panel = create_log_panel()
+            gui_log("info", "Log panel initialization successful")
+        except Exception as e:
+            gui_log("error", f"Error initializing log panel: {str(e)}")
+            # Create a simple fallback log panel
+            self.log_panel = ft.Container(
+                content=ft.Text("Error loading log panel", color="red"),
+                padding=20,
+                expand=True
+            )
         
         # Set up routes
         page.on_route_change = self.route_change
