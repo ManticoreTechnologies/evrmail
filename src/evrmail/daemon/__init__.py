@@ -21,7 +21,9 @@ UTXO_DIR = STORAGE_DIR / "utxos"
 INBOX_FILE = STORAGE_DIR / "inbox.json"
 PROCESSED_TXIDS_FILE = STORAGE_DIR / "processed_txids.json"
 
+# Create necessary directories
 STORAGE_DIR.mkdir(parents=True, exist_ok=True)
+UTXO_DIR.mkdir(parents=True, exist_ok=True)
 
 # ─── 🔥 Realtime UTXO Monitoring ──────────────────────────────────────────────
 

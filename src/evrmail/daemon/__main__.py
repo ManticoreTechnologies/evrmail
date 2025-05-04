@@ -54,8 +54,11 @@ def load_utxos():
     return {"mempool": mempool, "confirmed": confirmed}
 
 def save_utxos(utxos):
+    # Ensure directory exists
+    UTXO_DIR.mkdir(parents=True, exist_ok=True)
     MEMPOOL_UTXO_FILE.write_text(json.dumps(utxos["mempool"], indent=2))
     CONFIRMED_UTXO_FILE.write_text(json.dumps(utxos["confirmed"], indent=2))
+
 def mark_utxos_as_spent(tx, utxo_cache):
     """
     Given a transaction, mark matching UTXOs as spent in the cache.
@@ -177,6 +180,9 @@ def sync_utxos_from_node(rpc, known_addresses, log_callback):
     log = log_callback
     log("🔄 Fetching full UTXO set from node...")
     address_list = list(known_addresses.keys())
+
+    # Ensure directory exists
+    UTXO_DIR.mkdir(parents=True, exist_ok=True)
 
     # Load existing UTXO file if it exists
     confirmed_path = UTXO_DIR / "confirmed.json"
