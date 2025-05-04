@@ -234,25 +234,9 @@ class EvrMailApp:
             self.nav_rail.selected_index = 0
             view_content = self.inbox_panel
         
-        # Create simple app bar with minimum components
-        app_bar = ft.Container(
-            content=ft.Row(
-                [
-                    ft.Text("📬 EvrMail", size=20, color="white", weight="bold"),
-                    ft.Container(expand=True),  # Spacer
-                    ft.IconButton(icon=ft.icons.CLOSE, on_click=self.exit_app)
-                ],
-                alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-            ),
-            padding=10,
-            bgcolor="#202020",
-            border_radius=ft.border_radius.only(top_left=8, top_right=8)
-        )
-        
-        # Create main column
+        # Create main column without any custom app bar
         main_column = ft.Column(
             controls=[
-                app_bar,
                 ft.Row(
                     controls=[
                         self.nav_rail,
