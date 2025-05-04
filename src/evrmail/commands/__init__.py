@@ -14,32 +14,33 @@ encrypted IPFS metadata, and peer-to-peer message forwarding.
 #
 # 🧩 CLI Command Modules:
 #   💼 wallets     — Manage your Evrmore wallets
-#   🏷️  addresses   — Manage addresses and keys
+#   🏷️ addresses   — Manage addresses and keys
 #   💳 balance     — Show EVR or asset balances
-#   🚀 send        — Send EVR, assets, or encrypted messages
 #   📥 receive     — Get a fresh receive address
-#   📱 contacts    — Manage your address book
+#   🚀 send        — Send EVR, assets, or encrypted messages
 #   🔧 dev         — Developer & debug tools
+#   📱 contacts    — Manage your address book
+#   🔄 ipfs        — Manage IPFS
 # ─────────────────────────────────────────────────────────────
 
 # 📦 Imports
-from .wallets import wallets_app
 from .addresses import addresses_app
-from .balance import balance_app
-from .send import send_app
-from .receive import receive_app
 from .contacts import contacts_app
-from .dev import dev_app
+from .wallets import wallets_app
+from .balance import balance_app
+from .receive import receive_app
+from .send import send_app
 from .ipfs import ipfs_app
+from .dev import dev_app
 
 # 🌐 Exported CLI apps
 __all__ = [
-    "wallets_app",
     "addresses_app",
-    "balance_app",
-    "send_app",
-    "receive_app",
     "contacts_app",
+    "wallets_app",
+    "balance_app",
+    "receive_app",
+    "send_app",
+    "ipfs_app",
     "dev_app",
-    "ipfs_app"
 ]
