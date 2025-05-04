@@ -15,14 +15,14 @@ def create_log_panel():
     # Create a Container that will hold our log entries
     log_container = ft.Container(
         content=ft.ListView(
-            spacing=2,
+            spacing=1,
             auto_scroll=True,
         ),
         expand=True,
         bgcolor="#121212",
         border=ft.border.all(color="#333", width=1),
         border_radius=8,
-        padding=10,
+        padding=ft.padding.only(top=5, bottom=5),
     )
     
     # Legacy log output - using this for internal text processing
@@ -38,15 +38,25 @@ def create_log_panel():
     # Store log entries in memory
     log_entries = []
     
-    # Category selection with checkboxes
+    # Category selection with checkboxes - matched to category colors
+    category_colors = {
+        APP: "#00BCD4",      # Cyan
+        GUI: "#E040FB",      # Magenta/Purple
+        DAEMON: "#FFB74D",   # Orange/Yellow
+        WALLET: "#4CAF50",   # Green
+        CHAIN: "#2196F3",    # Blue
+        NETWORK: "#FFFFFF",  # White
+        DEBUG: "#9E9E9E"     # Gray
+    }
+    
     category_row = ft.Row([
         ft.Text("Categories:", color="#ccc"),
-        ft.Checkbox(label="App", value=True, fill_color="#00e0b6", data=APP),
-        ft.Checkbox(label="GUI", value=True, fill_color="#00e0b6", data=GUI),
-        ft.Checkbox(label="Daemon", value=True, fill_color="#00e0b6", data=DAEMON),
-        ft.Checkbox(label="Wallet", value=True, fill_color="#00e0b6", data=WALLET),
-        ft.Checkbox(label="Chain", value=True, fill_color="#00e0b6", data=CHAIN),
-        ft.Checkbox(label="Network", value=True, fill_color="#00e0b6", data=NETWORK),
+        ft.Checkbox(label="App", value=True, fill_color=category_colors[APP], check_color="#000000", data=APP),
+        ft.Checkbox(label="GUI", value=True, fill_color=category_colors[GUI], check_color="#000000", data=GUI),
+        ft.Checkbox(label="Daemon", value=True, fill_color=category_colors[DAEMON], check_color="#000000", data=DAEMON),
+        ft.Checkbox(label="Wallet", value=True, fill_color=category_colors[WALLET], check_color="#000000", data=WALLET),
+        ft.Checkbox(label="Chain", value=True, fill_color=category_colors[CHAIN], check_color="#000000", data=CHAIN),
+        ft.Checkbox(label="Network", value=True, fill_color=category_colors[NETWORK], check_color="#000000", data=NETWORK),
     ], alignment=ft.MainAxisAlignment.CENTER)
     
     # Log level dropdown
@@ -101,24 +111,13 @@ def create_log_panel():
             filtered_logs = []
             list_items = []  # Will hold our formatted Text widgets
             
-            # Define category colors for labels
-            category_colors = {
-                APP: "#3D99F6",      # Blue
-                GUI: "#BA68C8",      # Purple
-                DAEMON: "#FFB74D",   # Orange
-                WALLET: "#4CAF50",   # Green
-                CHAIN: "#29B6F6",    # Light Blue
-                NETWORK: "#9E9E9E",  # Gray
-                DEBUG: "#78909C"     # Slate
-            }
-            
             # Level colors for text
             level_colors = {
                 "debug": "#9E9E9E",   # Gray
                 "info": "#FFFFFF",    # White
-                "warning": "#FFD600", # Yellow
-                "error": "#FF5252",   # Red
-                "critical": "#FF1744" # Bright red
+                "warning": "#FFC107", # Yellow/Amber
+                "error": "#F44336",   # Red
+                "critical": "#D50000" # Dark Red
             }
             
             for entry in log_entries:
@@ -151,16 +150,18 @@ def create_log_panel():
                 formatted_entry = f"[{timestamp}] [{cat_label}] {message}"
                 filtered_logs.append(formatted_entry)
                 
-                # Create nicely formatted entry for ListView with colored components
+                # Get category and level colors
                 cat_color = category_colors.get(cat, "#FFFFFF")
                 level_color = level_colors.get(level_name, "#FFFFFF")
                 
-                # Create row with colored components - using the simplest possible format to avoid errors
+                # Create row with colored components - using proper color coding based on category and level
                 log_row = ft.Row([
-                    ft.Text(f"[{timestamp}] [{cat_label}] {message}", 
-                           color=level_color, 
-                           size=13,
-                           expand=True)
+                    # Timestamp in gray
+                    ft.Text(f"[{timestamp}]", color="#A0A0A0", size=13),
+                    # Category label with category-specific color
+                    ft.Text(f"[{cat_label}]", color=cat_color, size=13, weight="bold"),
+                    # Message with level-based coloring
+                    ft.Text(message, color=level_color, size=13, expand=True)
                 ], spacing=8)
                 
                 # Use simple alternating row colors without borders or complex styling

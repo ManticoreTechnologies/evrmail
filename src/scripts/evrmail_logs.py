@@ -43,12 +43,26 @@ def run_logs_app(page: ft.Page):
         use_material3=True,
     )
     
+    # Function to toggle dark/light mode
+    def toggle_theme(e):
+        page.theme_mode = "light" if page.theme_mode == "dark" else "dark"
+        theme_icon.name = "dark_mode" if page.theme_mode == "light" else "light_mode"
+        page.update()
+    
+    # Create theme toggle button
+    theme_icon = ft.IconButton(
+        icon="light_mode" if page.theme_mode == "dark" else "dark_mode",
+        tooltip="Toggle theme",
+        on_click=toggle_theme
+    )
+    
     # Create app bar
     app_bar = ft.Container(
         content=ft.Row(
             [
                 ft.Text("📋 EvrMail Logs", size=20, color="white", weight="bold"),
                 ft.Container(expand=True),  # Spacer
+                theme_icon,
                 ft.IconButton(
                     icon=ft.icons.CLOSE,
                     on_click=lambda _: page.window_close()
@@ -95,6 +109,12 @@ def main():
         action="append",
         help="Log categories to display (can be used multiple times, default: all)"
     )
+    parser.add_argument(
+        "--theme",
+        choices=["dark", "light"],
+        default="dark",
+        help="UI theme: dark or light (default: dark)"
+    )
     
     args = parser.parse_args()
     
@@ -111,8 +131,13 @@ def main():
     # Initialize logging
     configure_logging(level=log_level)
     
+    # Define app target with theme preference
+    def target_with_theme(page: ft.Page):
+        page.theme_mode = args.theme
+        run_logs_app(page)
+    
     # Launch the app
-    ft.app(target=run_logs_app)
+    ft.app(target=target_with_theme)
 
 if __name__ == "__main__":
     main() 
