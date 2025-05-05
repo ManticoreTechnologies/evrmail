@@ -112,7 +112,16 @@ function showView(viewName) {
   });
   
   // Show selected view
-  document.getElementById(views[viewName].element).style.display = 'block';
+  const viewElement = document.getElementById(views[viewName].element);
+  viewElement.style.display = 'block';
+  
+  // Special handling for browser view to ensure it takes up full content area (not covering sidebar)
+  if (viewName === 'browser') {
+    // Use relative positioning to stay within the main content flow
+    viewElement.style.position = 'relative';
+    viewElement.style.height = '100%';
+    viewElement.style.overflow = 'hidden';
+  }
   
   // Update current view
   appState.currentView = viewName;

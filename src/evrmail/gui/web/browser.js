@@ -8,44 +8,57 @@ function initBrowserView() {
         return;
     }
 
+    // Apply full-height styling to the container - use relative positioning to stay within the main content area
+    browserContainer.style.position = 'relative';
+    browserContainer.style.display = 'flex';
+    browserContainer.style.flexDirection = 'column';
+    browserContainer.style.height = '100%';
+    browserContainer.style.width = '100%';
+    browserContainer.style.padding = '20px';
+    browserContainer.style.backgroundColor = 'var(--dark-bg)';
+    browserContainer.style.overflow = 'hidden';
+    browserContainer.style.boxSizing = 'border-box';
+
     // Set up browser UI elements
     browserContainer.innerHTML = `
-        <div class="main-title">
-            <div class="logo">🌐</div>
-            <h1>EvrMail Browser</h1>
-        </div>
-        
-        <div class="browser-toolbar">
-            <div class="url-container">
-                <input type="text" id="url-input" placeholder="Enter URL or EVR domain (e.g. example.com or chess.evr)" class="url-input">
-                <button id="load-url-btn" class="btn btn-primary">Load</button>
+        <div style="display: flex; flex-direction: column; height: 100%; width: 100%;">
+            <div class="main-title" style="margin-bottom: 10px; padding: 5px;">
+                <div class="logo">🌐</div>
+                <h1>EvrMail Browser</h1>
             </div>
-            <div class="browser-actions">
-                <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
-                <button id="back-btn" class="btn btn-secondary">Back</button>
-                <button id="open-external-btn" class="btn btn-outline-secondary">Open in System Browser</button>
+            
+            <div class="browser-toolbar" style="margin-bottom: 5px; padding: 8px;">
+                <div class="url-container">
+                    <input type="text" id="url-input" placeholder="Enter URL or EVR domain (e.g. example.com or chess.evr)" class="url-input">
+                    <button id="load-url-btn" class="btn btn-primary">Load</button>
+                </div>
+                <div class="browser-actions">
+                    <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
+                    <button id="back-btn" class="btn btn-secondary">Back</button>
+                    <button id="open-external-btn" class="btn btn-outline-secondary">Open in System Browser</button>
+                </div>
             </div>
-        </div>
-        
-        <div class="browser-status-bar">
-            <span id="browser-status">Ready</span>
-            <button id="clear-browser-btn" class="btn btn-sm btn-secondary">Clear</button>
-        </div>
-        
-        <div id="evr-site-info" class="evr-site-info" style="display: none;">
-            <div class="site-info-header">
-                <span id="evr-site-title">EVR Domain</span>
-                <span id="evr-domain-badge" class="domain-badge">EVR</span>
+            
+            <div class="browser-status-bar" style="margin-bottom: 5px; padding: 4px 8px;">
+                <span id="browser-status">Ready</span>
+                <button id="clear-browser-btn" class="btn btn-sm btn-secondary">Clear</button>
             </div>
-            <div id="evr-site-description" class="site-description"></div>
-        </div>
-        
-        <div class="browser-content">
-            <div id="loading-indicator">
-                <div class="spinner"></div>
-                <div>Loading content...</div>
+            
+            <div id="evr-site-info" class="evr-site-info" style="display: none; margin-bottom: 5px; padding: 6px 10px;">
+                <div class="site-info-header">
+                    <span id="evr-site-title">EVR Domain</span>
+                    <span id="evr-domain-badge" class="domain-badge">EVR</span>
+                </div>
+                <div id="evr-site-description" class="site-description"></div>
             </div>
-            <iframe id="browser-iframe" sandbox="allow-scripts allow-forms allow-same-origin allow-popups" class="hidden"></iframe>
+            
+            <div class="browser-content" style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; margin: 0; padding: 0;">
+                <div id="loading-indicator">
+                    <div class="spinner"></div>
+                    <div>Loading content...</div>
+                </div>
+                <iframe id="browser-iframe" sandbox="allow-scripts allow-forms allow-same-origin allow-popups" class="hidden" style="flex: 1; width: 100%; height: 100%; border: none; margin: 0; padding: 0;"></iframe>
+            </div>
         </div>
     `;
 
@@ -180,26 +193,14 @@ function initBrowserView() {
         if (!iframe) return;
         
         try {
-            // Set initial height
+            // Set initial height - use full height of container rather than sizing to content
             iframe.style.height = '100%';
             
             // Wait for content to load
             iframe.onload = function() {
                 try {
-                    // Get the document height
-                    const iframeDoc = iframe.contentWindow.document;
-                    const docHeight = Math.max(
-                        iframeDoc.body.scrollHeight,
-                        iframeDoc.documentElement.scrollHeight,
-                        iframeDoc.body.offsetHeight,
-                        iframeDoc.documentElement.offsetHeight
-                    );
-                    
-                    // Add some padding to ensure we show everything
-                    iframe.style.height = (docHeight + 50) + 'px';
-                    console.log("Adjusted iframe height to:", docHeight + 50);
-                    
                     // Handle links
+                    const iframeDoc = iframe.contentWindow.document;
                     const iframeLinks = iframeDoc.querySelectorAll('a');
                     iframeLinks.forEach(link => {
                         link.addEventListener('click', (e) => {
@@ -211,13 +212,11 @@ function initBrowserView() {
                         });
                     });
                 } catch (err) {
-                    console.error("Error adjusting iframe height:", err);
-                    // Set a fallback height if we can't measure the content
-                    iframe.style.height = '800px';
+                    console.error("Error handling iframe links:", err);
                 }
             };
         } catch (error) {
-            console.error("Failed to adjust iframe height:", error);
+            console.error("Failed to adjust iframe:", error);
             iframe.style.height = '100%';
         }
     }
@@ -231,6 +230,9 @@ function initBrowserView() {
                 console.error("Browser iframe not found");
                 return;
             }
+
+            // Ensure iframe is visible
+            iframe.classList.remove('hidden');
 
             // Clear any previous content
             iframe.removeAttribute('srcdoc');
@@ -348,21 +350,25 @@ function initBrowserView() {
     function clearBrowser() {
         browserIframe.srcdoc = `
             <html>
-            <body style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: #ccc; font-family: Arial;">
-                <div style="text-align: center;">
-                    <h2 style="color: #3ea6ff;">EvrMail Browser</h2>
+            <body style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #121212; color: #ccc; font-family: Arial; overflow: auto; margin: 0; padding: 0;">
+                <div style="text-align: center; max-width: 80%; padding: 20px;">
+                    <h2 style="color: #3ea6ff; margin-top: 0;">EvrMail Browser</h2>
                     <p>Enter a URL above to start browsing</p>
                     <div style="margin-top: 20px;">
                         <p>Try these EVR domains:</p>
                         <ul style="list-style: none; padding: 0;">
-                            <li><a href="#" onclick="parent.postMessage({type: 'loadUrl', url: 'search.evr'}, '*')" style="color: #00e0b6; text-decoration: none;">search.evr</a></li>
-                            <li><a href="#" onclick="parent.postMessage({type: 'loadUrl', url: 'chess.evr'}, '*')" style="color: #00e0b6; text-decoration: none;">chess.evr</a></li>
+                            <li><a href="#" onclick="parent.postMessage({type: 'loadUrl', url: 'search.evr'}, '*')" style="color: #00e0b6; text-decoration: none; padding: 8px; display: inline-block; margin: 5px;">search.evr</a></li>
+                            <li><a href="#" onclick="parent.postMessage({type: 'loadUrl', url: 'chess.evr'}, '*')" style="color: #00e0b6; text-decoration: none; padding: 8px; display: inline-block; margin: 5px;">chess.evr</a></li>
                         </ul>
                     </div>
                 </div>
             </body>
             </html>
         `;
+        
+        // Show the iframe immediately upon clearing
+        browserIframe.classList.remove('hidden');
+        
         urlInput.value = '';
         evrSiteInfo.style.display = 'none';
         updateStatus('Browser cleared');

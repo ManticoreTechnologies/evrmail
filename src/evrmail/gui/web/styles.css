@@ -316,6 +316,7 @@ body {
 
 .sidebar {
     width: 220px;
+    min-width: 220px; /* Prevent sidebar from shrinking */
     background-color: var(--darker-bg);
     border-right: 1px solid var(--border-color);
     padding: 20px 10px;
@@ -375,10 +376,9 @@ body {
 
 .main-content {
     flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    background-color: var(--dark-bg);
-    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
 /* Loading indicator */
@@ -449,8 +449,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 15px;
-  padding: 15px;
+  margin-bottom: 10px;
+  padding: 10px;
   background-color: #1e1e1e;
   border-radius: 8px;
   border: 1px solid #333;
@@ -545,8 +545,10 @@ body {
 
 .browser-content {
   position: relative;
-  height: calc(100vh - 300px);
-  min-height: 400px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   background-color: #121212;
   border-radius: 8px;
   border: 1px solid #333;
@@ -557,6 +559,7 @@ body {
   width: 100%;
   height: 100%;
   border: none;
+  flex: 1;
   background-color: white;
 }
 
@@ -658,4 +661,37 @@ body {
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* View styling */
+.view {
+    position: relative;
+    flex: 1;
+    height: 100%;
+    overflow: auto;
+    background-color: var(--dark-bg);
+}
+
+/* Special browser view styling */
+#browser-view {
+    padding: 20px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#browser-view .browser-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#browser-view #browser-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    flex: 1;
 } 
