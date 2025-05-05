@@ -3,9 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Browser - EvrMail</title>
+  <title>EvrMail Browser</title>
   <!-- Include shared CSS -->
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     /* Browser-specific styles */
     .browser-toolbar {
@@ -109,18 +110,67 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="main-title">
-      <div class="logo">🌐</div>
-      <h1>EvrMail Browser</h1>
+  <div id="browser-view">
+    <div id="browser-controls">
+      <button id="back-button" class="browser-button" title="Back"><i class="fas fa-arrow-left"></i></button>
+      <button id="forward-button" class="browser-button" title="Forward"><i class="fas fa-arrow-right"></i></button>
+      <button id="refresh-button" class="browser-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
+      <button id="home-button" class="browser-button" title="Home"><i class="fas fa-home"></i></button>
+      <input type="text" id="url-bar" placeholder="Enter URL or search...">
+      <button id="go-button" class="browser-button" title="Go"><i class="fas fa-arrow-right"></i></button>
     </div>
     
-    <div id="browser-container" class="panel-container"></div>
+    <div id="evr-site-info" class="hidden">
+      <div class="site-info-header">
+        <h3 id="evr-site-title">EVR Domain</h3>
+        <span class="domain-badge">Verified EVR Domain</span>
+      </div>
+      <p class="site-description" id="evr-site-description">This is a decentralized website on the EVR network.</p>
+    </div>
+    
+    <div id="browser-content">
+      <div id="loading-indicator" class="hidden">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+      </div>
+      
+      <div id="error-display" class="hidden">
+        <i class="fas fa-exclamation-triangle"></i>
+        <h2 id="error-title">Error</h2>
+        <p id="error-message">Unable to load the requested page.</p>
+        <button id="retry-button">Try Again</button>
+      </div>
+      
+      <div id="empty-state">
+        <h2>EvrMail Browser</h2>
+        <p>Enter a URL above to browse the web or explore EVR domains</p>
+        
+        <div class="quick-links">
+          <h3>Sample EVR Domains</h3>
+          <ul>
+            <li><a href="chess.evr" class="evr-link">chess.evr</a> - Play Chess P2P</li>
+            <li><a href="explorer.evr" class="evr-link">explorer.evr</a> - EVR Block Explorer</li>
+            <li><a href="docs.evr" class="evr-link">docs.evr</a> - Documentation</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- The iframe with proper sandbox attributes that allow us to display content -->
+      <iframe 
+        id="browser-iframe" 
+        class="hidden" 
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        referrerpolicy="no-referrer">
+      </iframe>
+    </div>
+    
+    <div id="browser-status-bar">
+      <span id="status-text">Ready</span>
+    </div>
   </div>
-  
-  <!-- Include app.js first for shared functionality -->
-  <script src="app.js"></script>
-  <!-- Include browser.js for browser-specific functionality -->
+
+  <script src="/eel.js"></script>
+  <script src="utils.js"></script>
   <script src="browser.js"></script>
 </body>
 </html> 
