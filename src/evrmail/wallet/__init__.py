@@ -58,6 +58,8 @@ from .p2sh import *
 from .addresses import *
 from .store import load_wallet, list_wallets
 from .utils import *
+
+
 __all__ = [
     "WALLET_DIR",
     "addresses",

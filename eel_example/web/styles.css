@@ -1,0 +1,197 @@
+:root {
+  --primary-color: #00e0b6;
+  --secondary-color: #3ea6ff;
+  --accent-color: #00e0b6;
+  --dark-bg: #181818;
+  --darker-bg: #121212;
+  --light-bg: #202020;
+  --lightest-bg: #2a2a2a;
+  --text-color: #ffffff;
+  --muted-text: #aaaaaa;
+  --border-color: #333333;
+}
+
+body {
+  background-color: var(--dark-bg);
+  color: var(--text-color);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.sidebar {
+  background-color: var(--darker-bg);
+  border-right: 1px solid var(--border-color);
+  min-height: 100vh;
+}
+
+.main-content {
+  padding: 20px;
+  overflow-y: auto;
+  height: 100vh;
+}
+
+.nav-link {
+  color: var(--muted-text);
+  border-radius: 8px;
+  margin-bottom: 5px;
+}
+
+.nav-link:hover {
+  background-color: var(--lightest-bg);
+  color: var(--text-color);
+}
+
+.nav-link.active {
+  background-color: var(--primary-color) !important;
+  color: black !important;
+}
+
+/* Card styles */
+.card {
+  background-color: var(--darker-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: var(--light-bg);
+  border-bottom: 1px solid var(--border-color);
+  font-weight: bold;
+}
+
+/* Form controls */
+.form-control, .form-select {
+  background-color: var(--lightest-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+}
+
+.form-control:focus, .form-select:focus {
+  background-color: var(--lightest-bg);
+  border-color: var(--accent-color);
+  color: var(--text-color);
+  box-shadow: 0 0 0 0.25rem rgba(0, 224, 182, 0.25);
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: black;
+}
+
+.btn-primary:hover {
+  background-color: #00c0a0;
+  border-color: #00c0a0;
+  color: black;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  border-color: var(--secondary-color);
+  color: black;
+}
+
+.btn-secondary:hover {
+  background-color: #2d8adb;
+  border-color: #2d8adb;
+  color: black;
+}
+
+.btn-outline-primary {
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary-color);
+  color: black;
+}
+
+/* Lists */
+.list-group-item {
+  background-color: var(--darker-bg);
+  color: var(--text-color);
+  border-color: var(--border-color);
+}
+
+.list-group-item:hover {
+  background-color: var(--light-bg);
+}
+
+.list-group-item.active {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+  color: black;
+}
+
+/* Tables */
+.table {
+  color: var(--text-color);
+}
+
+.table thead th {
+  background-color: var(--light-bg);
+  border-color: var(--border-color);
+}
+
+.table-dark {
+  --bs-table-bg: var(--darker-bg);
+  --bs-table-border-color: var(--border-color);
+}
+
+/* Custom classes */
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.text-secondary {
+  color: var(--secondary-color) !important;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.log-container {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.message-list {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+
+.view-panel {
+  padding: 10px;
+}
+
+/* Loading animation */
+.loading-animation h1 {
+  color: var(--primary-color);
+}
+
+.progress-bar {
+  background-color: var(--primary-color);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--darker-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--lightest-bg);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-text);
+} 

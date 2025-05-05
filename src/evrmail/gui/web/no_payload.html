@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Evrmail</title>
+  <style>
+    body {
+      background: #0f0f0f;
+      color: #fff;
+      font-family: 'Google Sans', sans-serif;
+      text-align: center;
+      margin-top: 100px;
+    }
+    h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+      color: #00e0b6;
+    }
+    canvas {
+      background: #222;
+      display: block;
+      margin: 20px auto;
+      border: 2px solid #3ea6ff;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🚫 Site Not Found</h1>
+<p>The requested .evr domain could not be found or has no IPFS content.</p>
+
+<canvas id="game" width="480" height="120"></canvas>
+
+<script>
+// Mini Jump Game
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let dino = { x: 50, y: 90, vy: 0, jumpForce: 12, grounded: true };
+let gravity = 0.8;
+let cactus = { x: 480, w: 20, h: 40 };
+
+document.addEventListener('keydown', () => {
+  if (dino.grounded) {
+    dino.vy = -dino.jumpForce;
+    dino.grounded = false;
+  }
+});
+
+function loop() {
+  ctx.clearRect(0, 0, 480, 120);
+
+  // Dino
+  ctx.fillStyle = '#3ea6ff';
+  ctx.fillRect(dino.x, dino.y, 30, 30);
+  
+  dino.vy += gravity;
+  dino.y += dino.vy;
+  
+  if (dino.y >= 90) {
+    dino.y = 90;
+    dino.vy = 0;
+    dino.grounded = true;
+  }
+
+  // Cactus
+  cactus.x -= 5;
+  if (cactus.x < -20) cactus.x = 480 + Math.random() * 100;
+  
+  ctx.fillStyle = '#00e0b6';
+  ctx.fillRect(cactus.x, 80, cactus.w, cactus.h);
+
+  // Collision
+  if (cactus.x < dino.x + 30 && cactus.x + cactus.w > dino.x && dino.y + 30 > 80) {
+    alert('Game Over! Refresh to retry.');
+    cactus.x = 480;
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html> 

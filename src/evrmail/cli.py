@@ -51,11 +51,20 @@ A secure, blockchain-native messaging system powered by asset channels and encry
 )
 
 # --- Sub CLI App (Gui mode)
-evrmail_flet_app = typer.Typer()
-@evrmail_flet_app.command(name="evrmail-flet", help="Start the gui for evrmail")
-def start_evrmail_flet():
-    from evrmail.gui.main import run_gui  # this should start your GUI window
-    run_gui()
+evrmail_eel_app = typer.Typer()
+@evrmail_eel_app.command(name="evrmail-eel", help="Start the GUI for evrmail using Eel")
+def start_evrmail_eel():
+    from evrmail.gui.gui import start_gui  # This will start the Eel GUI window
+    start_gui()
+
+# Default GUI command when no subcommand is specified
+@evrmail_cli_app.callback(invoke_without_command=True)
+def main_callback(ctx: typer.Context):
+    if ctx.invoked_subcommand is None:
+        # If no subcommand is given, start the Eel GUI
+        from evrmail.gui.gui import start_gui
+        start_gui()
+
 # 📦 Register subcommands
 evrmail_cli_app.add_typer(wallets_app)
 evrmail_cli_app.add_typer(addresses_app)
@@ -69,11 +78,8 @@ evrmail_cli_app.add_typer(logs_app)
 
 # ─── 🧪 ENTRYPOINT FOR `python -m evrmail.cli` ────────────────────────────────
 def main():
-    import sys
-    if len(sys.argv) == 1:
-        sys.argv.append("--help")
     evrmail_cli_app()
 
-def flet():
-    evrmail_flet_app()
+def eel():
+    evrmail_eel_app()
     
