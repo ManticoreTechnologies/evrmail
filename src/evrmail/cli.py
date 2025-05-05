@@ -22,6 +22,7 @@ encrypted IPFS metadata, and peer-to-peer message forwarding.
 #   • evrmail config   — View/set config (outbox, default address, etc.)
 #   • evrmail tx       — Inspect or decode transactions
 #   • evrmail debug    — Advanced developer tools
+#   • evrmail logs     — View and manage logs
 # ─────────────────────────────────────────────────────────────
 
 # ─── 🧩 IMPORTS ────────────────────────────────────────────────────────────────
@@ -34,7 +35,8 @@ from .commands import (
     dev_app,
     contacts_app,
     receive_app,
-    ipfs_app
+    ipfs_app,
+    logs_app
 )
 
 # ─── 🚀 MAIN CLI APP ───────────────────────────────────────────────────────────
@@ -53,7 +55,6 @@ evrmail_flet_app = typer.Typer()
 @evrmail_flet_app.command(name="evrmail-flet", help="Start the gui for evrmail")
 def start_evrmail_flet():
     from evrmail.gui.main import run_gui  # this should start your GUI window
-    print("To be implemented!")
     run_gui()
 # 📦 Register subcommands
 evrmail_cli_app.add_typer(wallets_app)
@@ -64,6 +65,7 @@ evrmail_cli_app.add_typer(dev_app)
 evrmail_cli_app.add_typer(contacts_app)
 evrmail_cli_app.add_typer(receive_app)
 evrmail_cli_app.add_typer(ipfs_app)
+evrmail_cli_app.add_typer(logs_app)
 
 # ─── 🧪 ENTRYPOINT FOR `python -m evrmail.cli` ────────────────────────────────
 def main():

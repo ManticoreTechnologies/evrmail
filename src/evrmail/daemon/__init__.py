@@ -5,9 +5,14 @@ import os
 import subprocess
 import threading
 import time
+import logging
 from pathlib import Path
 
 from evrmail.config import load_config
+from evrmail.utils import (
+    configure_logging, register_callback,
+    APP, GUI, DAEMON, WALLET, CHAIN, NETWORK
+)
 
 # 🛠 Filesystem Monitoring
 from watchdog.observers import Observer
@@ -30,12 +35,13 @@ UTXO_DIR.mkdir(parents=True, exist_ok=True)
 class ConfirmedFileHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if event.src_path.endswith("confirmed.json"):
-            print("[Daemon] 🔥 confirmed.json modified, reloading addresses...")
+            from evrmail.utils import daemon as daemon_log
+            daemon_log("info", "🔥 confirmed.json modified, reloading addresses...")
             try:
                 from .__main__ import reload_known_addresses
                 reload_known_addresses()
             except Exception as e:
-                print(f"[Daemon] ⚠️ Failed to reload addresses: {e}")
+                daemon_log("error", f"⚠️ Failed to reload addresses: {e}")
 
 def monitor_confirmed_utxos_realtime():
     observer = Observer()
@@ -52,13 +58,45 @@ def monitor_confirmed_utxos_realtime():
 
 # ─── 🚀 Daemon Launcher ───────────────────────────────────────────────────────
 
-def start_daemon_threaded(log_callback=None):
+def start_daemon_threaded(log_callback=None, debug_mode=False):
+    """Start the EvrMail daemon in a background thread"""
+    # Set up logging
+    log_level = logging.DEBUG if debug_mode else logging.INFO
+    
+    # Configure our logger
+    configure_logging(level=log_level)
+    
+    # Register callbacks to forward logs to the GUI
+    if log_callback:
+        # Register callback for all daemon-related categories
+        unsubscribe_funcs = []
+        
+        # Helper to adapt logger callback format to simpler format expected by GUI
+        def adapter(category, level_name, level_num, message, details=None):
+            # If we have details, add them to the message
+            if details:
+                log_message = message
+                if isinstance(details, dict) and details:
+                    details_str = ": " + ", ".join(f"{k}={v}" for k, v in details.items())
+                    log_message += details_str
+                log_callback(log_message)
+            else:
+                log_callback(message)
+        
+        # Register for each category
+        for category in [DAEMON, CHAIN, WALLET, NETWORK]:
+            unsubscribe = register_callback(adapter, category)
+            unsubscribe_funcs.append(unsubscribe)
+    
+    # Start the daemon in a thread
     def run():
         import evrmail.daemon.__main__ as main_module
-        main_module.main()
+        main_module.main(debug_mode=debug_mode)
 
     thread = threading.Thread(target=run, daemon=True)
     thread.start()
+    
+    return thread
 
 # ─── 📬 Inbox & Processed TXIDs ────────────────────────────────────────────────
 
@@ -85,7 +123,8 @@ def read_message(cid: str):
         result = subprocess.run(["ipfs", "cat", cid], capture_output=True, text=True, check=True)
         return result.stdout.strip()
     except subprocess.CalledProcessError as e:
-        print(f"[IPFS ERROR] {e}")
+        from evrmail.utils import network as network_log
+        network_log("error", f"IPFS Error: {e}")
         return None
 
 # ─── ✅ Exportable API ─────────────────────────────────────────────────────────

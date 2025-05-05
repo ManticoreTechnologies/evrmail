@@ -21,6 +21,7 @@ encrypted IPFS metadata, and peer-to-peer message forwarding.
 #   🔧 dev         — Developer & debug tools
 #   📱 contacts    — Manage your address book
 #   🔄 ipfs        — Manage IPFS
+#   📜 logs        — View and manage logs
 # ─────────────────────────────────────────────────────────────
 
 # 📦 Imports
@@ -32,6 +33,7 @@ from .receive import receive_app
 from .send import send_app
 from .ipfs import ipfs_app
 from .dev import dev_app
+from .logs import logs_app
 
 # 🌐 Exported CLI apps
 __all__ = [
@@ -43,4 +45,5 @@ __all__ = [
     "send_app",
     "ipfs_app",
     "dev_app",
+    "logs_app",
 ]
