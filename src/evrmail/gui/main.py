@@ -28,6 +28,38 @@ from .inbox_panel import create_inbox_panel
 from .balance_panel import create_balance_tab
 from .utxo_panel import create_utxo_panel
 
+# Global app reference
+app = None
+
+# Define a direct log callback function that will handle logs directly without going through the daemon adapter
+def direct_log_callback(category, level_name, level_num, message, details=None):
+    """
+    Direct log callback function that can be registered with evrmail.utils.register_callback.
+    This bypasses the adapter function in start_daemon_threaded.
+    """
+    # Store logs directly in the log panel if it's available
+    if hasattr(app, "log_panel") and hasattr(app.log_panel, "log_entries"):
+        # Get timestamp manually since we're not in the logger
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        # Add to log entries with details
+        app.log_panel.log_entries.append((category, level_name, timestamp, message, details))
+        
+        # Update filters if panel is visible
+        try:
+            if hasattr(app.log_panel, "apply_filters"):
+                app.log_panel.apply_filters()
+        except Exception as e:
+            print(f"Error updating log panel from direct callback: {e}")
+    
+    # Convert message to string for the simple loading screen logger
+    log_str = f"[{category}] {message}"
+    if app:
+        app._append_log(log_str)
+    else:
+        print(log_str)  # Fallback if app is not initialized yet
+
 class EvrMailApp:
     def __init__(self):
         self.log_queue = Queue()
@@ -38,6 +70,10 @@ class EvrMailApp:
         
         # Configure logging for the app at startup
         configure_logging(level=logging.INFO)
+        
+        # Make the app instance globally accessible so the direct_log_callback can use it
+        global app
+        app = self
         
     def _flush_log_queue(self, e=None):
         """Process any pending log messages in the queue"""
@@ -81,10 +117,30 @@ class EvrMailApp:
         """Start the EvrMail daemon in a background thread"""
         gui_log("info", "Starting EvrMail daemon...")
         
-        # Process messages from the daemon
-        def log_callback(msg):
+        # Register direct callbacks for detailed logging
+        unsubscribe_funcs = []
+        for category in [DAEMON, CHAIN, WALLET, NETWORK, DEBUG]:
+            unsubscribe = register_callback(direct_log_callback, category)
+            unsubscribe_funcs.append(unsubscribe)
+        
+        # Store unsubscribe functions to be called on shutdown
+        self.daemon_log_unsubscribe_funcs = unsubscribe_funcs
+        
+        # Set a timeout to force transition to inbox after 10 seconds
+        def force_start_timeout():
+            if not self.daemon_started:
+                gui_log("warning", "Forcing transition to inbox after timeout")
+                self.daemon_started = True
+                if self.page:
+                    self.page.go("/inbox")
+        
+        # Schedule the timeout
+        threading.Timer(10.0, force_start_timeout).start()
+        
+        # Start the daemon with our logger already configured
+        # We'll use a simple message-only callback for the loading screen
+        def simple_callback(msg):
             self._append_log(msg)
-            
             # Check for successful daemon startup with more conditions
             daemon_ready_patterns = [
                 "Daemon listening for transactions",
@@ -100,19 +156,8 @@ class EvrMailApp:
                 if self.page:
                     self.page.go("/inbox")
         
-        # Set a timeout to force transition to inbox after 10 seconds
-        def force_start_timeout():
-            if not self.daemon_started:
-                gui_log("warning", "Forcing transition to inbox after timeout")
-                self.daemon_started = True
-                if self.page:
-                    self.page.go("/inbox")
-        
-        # Schedule the timeout
-        threading.Timer(10.0, force_start_timeout).start()
-        
-        # Start the daemon with our logger already configured
-        start_daemon_threaded(log_callback=log_callback, debug_mode=False)
+        # Start the daemon thread
+        start_daemon_threaded(log_callback=simple_callback, debug_mode=False)
 
     def create_loading_view(self):
         """Create the loading view shown during daemon startup"""

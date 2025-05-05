@@ -72,8 +72,16 @@ def start_daemon_threaded(log_callback=None, debug_mode=False):
         unsubscribe_funcs = []
         
         # Helper to adapt logger callback format to simpler format expected by GUI
-        def adapter(category, level_name, level_num, message):
-            log_callback(message)
+        def adapter(category, level_name, level_num, message, details=None):
+            # If we have details, add them to the message
+            if details:
+                log_message = message
+                if isinstance(details, dict) and details:
+                    details_str = ": " + ", ".join(f"{k}={v}" for k, v in details.items())
+                    log_message += details_str
+                log_callback(log_message)
+            else:
+                log_callback(message)
         
         # Register for each category
         for category in [DAEMON, CHAIN, WALLET, NETWORK]:

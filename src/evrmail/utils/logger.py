@@ -158,12 +158,12 @@ class ColorizedHandler(logging.StreamHandler):
         super().emit(record)
 
 # Register a callback for log events
-def register_callback(callback: Callable[[str, str, int, str], None], category: str = None) -> Callable:
+def register_callback(callback: Callable[[str, str, int, str, dict], None], category: str = None) -> Callable:
     """
     Register a callback for log events.
     
     Args:
-        callback: Function that takes (category, level_name, level, message)
+        callback: Function that takes (category, level_name, level, message, details=None)
         category: Specific category to subscribe to (or None for all)
         
     Returns:
@@ -224,6 +224,9 @@ def get_logger(category: str):
         )
         record.category = category
         
+        # Extract details if provided
+        details = kwargs.get('details', None)
+        
         # Call callbacks
         if _log_callbacks:
             level_name = logging.getLevelName(level).lower()
@@ -232,7 +235,7 @@ def get_logger(category: str):
             if category in _log_callbacks:
                 for callback in _log_callbacks[category]:
                     try:
-                        callback(category, level_name, level, msg)
+                        callback(category, level_name, level, msg, details)
                     except Exception as e:
                         print(f"Error in log callback: {e}")
             
@@ -240,7 +243,7 @@ def get_logger(category: str):
             if "all" in _log_callbacks:
                 for callback in _log_callbacks["all"]:
                     try:
-                        callback(category, level_name, level, msg)
+                        callback(category, level_name, level, msg, details)
                     except Exception as e:
                         print(f"Error in log callback: {e}")
         
@@ -290,6 +293,7 @@ def _log_with_category(category: str, level: str, msg: str, *args, **kwargs):
     logger = get_logger(category)
     log_level = LEVELS.get(level.lower(), logging.INFO)
     
+    # Pass all kwargs (including details) to the logger methods
     if log_level == logging.DEBUG:
         logger.debug(msg, *args, **kwargs)
     elif log_level == logging.INFO:
