@@ -865,11 +865,23 @@ def get_messages():
             
             # Format for JavaScript consumption
             for msg in inbox:
+                # Extract content from the nested structure
                 content = msg.get("content", {})
+                if not isinstance(content, dict):
+                    content = {}
+                
+                # Generate unique ID if not present
+                msg_id = msg.get("id", "")
+                if not msg_id:
+                    msg_id = f"msg_{int(time.time())}_{len(messages)}"
+                
+                # Get timestamp or use current time
+                timestamp = msg.get("timestamp", int(time.time()))
+                
                 messages.append({
-                    "id": msg.get("id", ""),
-                    "sender": content.get("from", "Unknown"),
-                    "timestamp": msg.get("timestamp", int(time.time())),
+                    "id": msg_id,
+                    "sender": content.get("from", msg.get("from", "Unknown")),
+                    "timestamp": timestamp,
                     "subject": content.get("subject", "(No Subject)"),
                     "content": content.get("content", "(No Content)"),
                     "read": msg.get("read", False)

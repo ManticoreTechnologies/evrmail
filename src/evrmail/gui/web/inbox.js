@@ -1,7 +1,18 @@
 // Inbox view implementation
 function initInboxView() {
-  const container = document.getElementById('inbox-container');
-  if (!container) return;
+  const viewContainer = document.getElementById('inbox-view');
+  if (!viewContainer) {
+    console.error('Inbox view container not found');
+    return;
+  }
+  
+  // Check if we need to create the inbox container
+  let container = document.getElementById('inbox-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'inbox-container';
+    viewContainer.appendChild(container);
+  }
   
   // Create inbox UI
   container.innerHTML = `
@@ -80,10 +91,39 @@ function initInboxView() {
   loadMessages();
 }
 
+// Add a global refresh function that app.js can call
+function refreshInbox() {
+  // Check if the inbox view has been initialized
+  const statusElement = document.getElementById('inbox-status');
+  if (!statusElement) {
+    // Initialize inbox view first if elements don't exist yet
+    const container = document.getElementById('inbox-view');
+    if (container) {
+      // Create inbox container if it doesn't exist
+      if (!document.getElementById('inbox-container')) {
+        const inboxContainer = document.createElement('div');
+        inboxContainer.id = 'inbox-container';
+        container.appendChild(inboxContainer);
+      }
+      // Initialize the view
+      initInboxView();
+    }
+  }
+  
+  // Now load messages
+  loadMessages();
+}
+
 // Load messages from backend
 function loadMessages() {
   const statusElement = document.getElementById('inbox-status');
   const messageList = document.getElementById('message-list');
+  
+  // Check if elements exist before proceeding
+  if (!statusElement || !messageList) {
+    console.error('Inbox elements not found. View may not be initialized.');
+    return;
+  }
   
   // Show loading status
   statusElement.className = 'alert alert-info';
@@ -334,6 +374,9 @@ function escapeHtml(text) {
 
 // Make sure initInboxView is globally available
 window.initInboxView = initInboxView;
+
+// Make sure the function is globally available
+window.refreshInbox = refreshInbox;
 
 // Initialize on DOMContentLoaded if not loaded by app.js
 document.addEventListener('DOMContentLoaded', function() {
