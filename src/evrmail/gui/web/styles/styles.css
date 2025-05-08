@@ -1,28 +1,38 @@
 :root {
-  --primary-color: #00e0b6;
+  --primary-color: #3ea6ff;
   --secondary-color: #3ea6ff;
   --accent-color: #00e0b6;
   --dark-bg: #181818;
   --darker-bg: #121212;
   --light-bg: #202020;
   --lightest-bg: #2a2a2a;
-  --text-color: #ffffff;
-  --muted-text: #aaaaaa;
-  --border-color: #333333;
+  --text-color: #e0e0e0;
+  --muted-text: #b0b0b0;
+  --border-color: #444;
+  --radius: 4px;
+  --sidebar-bg: #23272b;
+  --main-bg: #181a1b;
+  --table-row-alt: #202224;
 }
 
 body {
-  background-color: var(--dark-bg);
+  background: var(--main-bg);
   color: var(--text-color);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 15px;
   height: 100vh;
   overflow: hidden;
 }
 
+.container {
+  padding: 12px 18px 12px 18px;
+}
+
 .sidebar {
-  background-color: var(--darker-bg);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
-  min-height: 100vh;
+  min-width: 180px;
+  padding: 0;
 }
 
 .main-content {
@@ -31,142 +41,238 @@ body {
   height: 100vh;
 }
 
-.nav-link {
-  color: var(--muted-text);
-  border-radius: 8px;
-  margin-bottom: 5px;
+.app-logo {
+  display: flex;
+  align-items: center;
+  padding: 12px 0 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 8px;
 }
 
-.nav-link:hover {
-  background-color: var(--lightest-bg);
-  color: var(--text-color);
+.app-logo img {
+  margin-right: 8px;
+}
+
+.app-logo h2 {
+  color: var(--primary-color);
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.app-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.nav-link {
+  color: var(--muted-text);
+  font-size: 15px;
+  border-radius: 0;
+  padding: 10px 16px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link .icon {
+  margin-right: 8px;
+  font-size: 1rem;
 }
 
 .nav-link.active {
-  background-color: var(--primary-color) !important;
-  color: black !important;
+  background: var(--main-bg);
+  color: var(--primary-color);
+  border-left: 3px solid var(--primary-color);
+  font-weight: 600;
 }
 
-/* Card styles */
-.card {
-  background-color: var(--darker-bg);
+.nav-link:hover {
+  background: #222426;
+  color: var(--primary-color);
+}
+
+.main-title h1 {
+  font-size: 1.4rem;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.home-subtitle, .container > .row.mb-4 > .col > p.lead {
+  font-size: 1rem;
+  color: #b0b0b0;
+  margin-bottom: 16px;
+  font-weight: 400;
+}
+
+.card, .panel-container {
+  background: none;
   border: 1px solid var(--border-color);
-  border-radius: 10px;
-  margin-bottom: 20px;
+  border-radius: var(--radius);
+  box-shadow: none;
+  padding: 16px;
+  margin-bottom: 18px;
 }
 
 .card-header {
-  background-color: var(--light-bg);
+  background: none;
   border-bottom: 1px solid var(--border-color);
-  font-weight: bold;
+  font-weight: 600;
+  font-size: 1rem;
+  padding: 8px 0 8px 0;
 }
 
-/* Form controls */
-.form-control, .form-select {
-  background-color: var(--lightest-bg);
-  border: 1px solid var(--border-color);
-  color: var(--text-color);
+.btn, .btn-primary, .btn-outline-primary, .btn-secondary {
+  border-radius: var(--radius);
+  font-size: 14px;
+  padding: 4px 16px;
+  min-width: 0;
+  box-shadow: none;
 }
 
-.form-control:focus, .form-select:focus {
-  background-color: var(--lightest-bg);
-  border-color: var(--accent-color);
-  color: var(--text-color);
-  box-shadow: 0 0 0 0.25rem rgba(0, 224, 182, 0.25);
-}
-
-/* Buttons */
 .btn-primary {
-  background-color: var(--primary-color);
-  border-color: var(--primary-color);
-  color: black;
+  background: var(--primary-color);
+  color: #fff;
+  border: 1px solid var(--primary-color);
 }
 
 .btn-primary:hover {
-  background-color: #00c0a0;
-  border-color: #00c0a0;
-  color: black;
-}
-
-.btn-secondary {
-  background-color: var(--secondary-color);
-  border-color: var(--secondary-color);
-  color: black;
-}
-
-.btn-secondary:hover {
-  background-color: #2d8adb;
+  background: #2d8adb;
   border-color: #2d8adb;
-  color: black;
+  color: #fff;
 }
 
 .btn-outline-primary {
   color: var(--primary-color);
-  border-color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+  background: none;
 }
 
 .btn-outline-primary:hover {
-  background-color: var(--primary-color);
-  color: black;
+  background: var(--primary-color);
+  color: #fff;
 }
 
-/* Lists */
+.btn-secondary {
+  background: #23272b;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+  background: #202224;
+  color: #fff;
+}
+
+.table {
+  background: none;
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  font-size: 14px;
+}
+
+.table th, .table td {
+  border-color: var(--border-color);
+  font-size: 14px;
+  padding: 6px 10px;
+}
+
+.table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--table-row-alt);
+}
+
 .list-group-item {
-  background-color: var(--darker-bg);
+  background: none;
   color: var(--text-color);
   border-color: var(--border-color);
-}
-
-.list-group-item:hover {
-  background-color: var(--light-bg);
+  font-size: 14px;
+  padding: 8px 12px;
 }
 
 .list-group-item.active {
-  background-color: var(--primary-color);
+  background: var(--primary-color);
+  color: #fff;
   border-color: var(--primary-color);
-  color: black;
 }
 
-/* Tables */
-.table {
+.form-control, .form-select {
+  background: #23272b;
   color: var(--text-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  font-size: 14px;
+  padding: 6px 10px;
 }
 
-.table thead th {
-  background-color: var(--light-bg);
-  border-color: var(--border-color);
+.form-control:focus, .form-select:focus {
+  border-color: var(--primary-color);
+  box-shadow: none;
 }
 
-.table-dark {
-  --bs-table-bg: var(--darker-bg);
-  --bs-table-border-color: var(--border-color);
+.nav-tabs .nav-link {
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #b0b0b0;
+  font-size: 14px;
+  padding: 8px 16px;
+  background: none;
 }
 
-/* Custom classes */
-.text-primary {
-  color: var(--primary-color) !important;
+.nav-tabs .nav-link.active {
+  color: var(--primary-color);
+  border-bottom: 2px solid var(--primary-color);
+  background: none;
 }
 
-.text-secondary {
-  color: var(--secondary-color) !important;
+.row.mb-4, .row.mb-3 {
+  margin-bottom: 1.2rem !important;
 }
 
-.bg-primary {
-  background-color: var(--primary-color) !important;
+.card .btn, .panel-container .btn {
+  border-radius: var(--radius);
 }
 
-.log-container {
-  font-family: 'Consolas', 'Courier New', monospace;
-  font-size: 0.85rem;
+.card-body {
+  padding: 10px 4px;
 }
 
-.message-list {
-  max-height: 40vh;
-  overflow-y: auto;
+/* Remove card shadow and excessive rounding everywhere */
+/* Remove browser/card special backgrounds */
+#browser-iframe, #browser-view .browser-content, .browser-toolbar, .panel-container {
+  background: none !important;
+  border-radius: var(--radius) !important;
+  box-shadow: none !important;
 }
 
-.view-panel {
-  padding: 10px;
+/* Make all view backgrounds flat */
+.view {
+  background: var(--main-bg);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Compact QR code and modal */
+#qr-code {
+  margin: 0 auto;
+}
+
+/* Compact log and message list */
+.log-container, .message-list {
+  font-size: 13px;
+  padding: 0;
+}
+
+/* Compact loading indicator */
+.loading-indicator {
+  gap: 8px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-width: 3px;
 }
 
 /* Loading animation */
@@ -352,7 +458,7 @@ body {
     display: flex;
     align-items: center;
     padding: 10px 15px;
-    color: var(--muted-text);
+    color: #7a7a7a;
     text-decoration: none;
     border-radius: 8px;
     transition: all 0.2s ease;
@@ -360,7 +466,7 @@ body {
 
 .nav-link:hover {
     background-color: var(--lightest-bg);
-    color: var(--text-color);
+    color: var(--primary-color);
 }
 
 .nav-link.active {
@@ -371,7 +477,7 @@ body {
 
 .nav-link .icon {
     margin-right: 10px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
 }
 
 .main-content {
@@ -431,8 +537,15 @@ body {
 
 .main-title h1 {
     color: var(--secondary-color);
-    margin: 0;
-    font-size: 2rem;
+    margin: 0 0 8px 0;
+    font-size: 2.5rem;
+}
+
+.home-subtitle, .container > .row.mb-4 > .col > p.lead {
+  font-size: 1.15rem;
+  color: #b0b0b0;
+  margin-bottom: 24px;
+  font-weight: 400;
 }
 
 /* Enhanced browser styles */
@@ -694,4 +807,16 @@ body {
     height: 100%;
     border: none;
     flex: 1;
+}
+
+.row.mb-4, .row.mb-3 {
+  margin-bottom: 2.2rem !important;
+}
+
+.card .btn, .panel-container .btn {
+  border-radius: var(--radius);
+}
+
+.card-body {
+  padding: 18px 12px;
 } 

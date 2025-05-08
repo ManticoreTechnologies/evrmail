@@ -111,61 +111,38 @@
 </head>
 <body>
   <div id="browser-view">
-    <div id="browser-controls">
-      <button id="back-button" class="browser-button" title="Back"><i class="fas fa-arrow-left"></i></button>
-      <button id="forward-button" class="browser-button" title="Forward"><i class="fas fa-arrow-right"></i></button>
-      <button id="refresh-button" class="browser-button" title="Refresh"><i class="fas fa-sync-alt"></i></button>
-      <button id="home-button" class="browser-button" title="Home"><i class="fas fa-home"></i></button>
-      <input type="text" id="url-bar" placeholder="Enter URL or search...">
-      <button id="go-button" class="browser-button" title="Go"><i class="fas fa-arrow-right"></i></button>
+    <div class="main-title">
+      <div class="logo">🌐</div>
+      <h1>EvrMail Browser</h1>
     </div>
-    
-    <div id="evr-site-info" class="hidden">
+    <div class="browser-toolbar">
+      <div class="url-container">
+        <input type="text" id="url-input" placeholder="Enter URL or EVR domain (e.g. example.com or chess.evr)" class="url-input">
+        <button id="load-url-btn" class="btn btn-primary">Load</button>
+      </div>
+      <div class="browser-actions">
+        <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
+        <button id="back-btn" class="btn btn-secondary">Back</button>
+        <button id="open-external-btn" class="btn btn-outline-secondary">Open in System Browser</button>
+      </div>
+    </div>
+    <div class="browser-status-bar">
+      <span id="browser-status">Ready</span>
+      <button id="clear-browser-btn" class="btn btn-sm btn-secondary">Clear</button>
+    </div>
+    <div id="evr-site-info" class="evr-site-info" style="display: none;">
       <div class="site-info-header">
-        <h3 id="evr-site-title">EVR Domain</h3>
-        <span class="domain-badge">Verified EVR Domain</span>
+        <span id="evr-site-title">EVR Domain</span>
+        <span id="evr-domain-badge" class="domain-badge">EVR</span>
       </div>
-      <p class="site-description" id="evr-site-description">This is a decentralized website on the EVR network.</p>
+      <div id="evr-site-description" class="site-description"></div>
     </div>
-    
-    <div id="browser-content">
-      <div id="loading-indicator" class="hidden">
+    <div class="browser-content">
+      <div id="loading-indicator" style="display:none;">
         <div class="spinner"></div>
-        <p>Loading...</p>
+        <div>Loading content...</div>
       </div>
-      
-      <div id="error-display" class="hidden">
-        <i class="fas fa-exclamation-triangle"></i>
-        <h2 id="error-title">Error</h2>
-        <p id="error-message">Unable to load the requested page.</p>
-        <button id="retry-button">Try Again</button>
-      </div>
-      
-      <div id="empty-state">
-        <h2>EvrMail Browser</h2>
-        <p>Enter a URL above to browse the web or explore EVR domains</p>
-        
-        <div class="quick-links">
-          <h3>Sample EVR Domains</h3>
-          <ul>
-            <li><a href="chess.evr" class="evr-link">chess.evr</a> - Play Chess P2P</li>
-            <li><a href="explorer.evr" class="evr-link">explorer.evr</a> - EVR Block Explorer</li>
-            <li><a href="docs.evr" class="evr-link">docs.evr</a> - Documentation</li>
-          </ul>
-        </div>
-      </div>
-      
-      <!-- The iframe with proper sandbox attributes that allow us to display content -->
-      <iframe 
-        id="browser-iframe" 
-        class="hidden" 
-        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
-        referrerpolicy="no-referrer">
-      </iframe>
-    </div>
-    
-    <div id="browser-status-bar">
-      <span id="status-text">Ready</span>
+      <iframe id="browser-iframe" sandbox="allow-scripts allow-forms allow-same-origin allow-popups" class="hidden"></iframe>
     </div>
   </div>
 

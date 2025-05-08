@@ -1,87 +1,13 @@
+import { loadTemplate } from '../../utils.js';
+
 // Inbox view implementation
-function initInboxView() {
-  const viewContainer = document.getElementById('inbox-view');
-  if (!viewContainer) {
-    console.error('Inbox view container not found');
-    return;
-  }
-  
-  // Check if we need to create the inbox container
-  let container = document.getElementById('inbox-container');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'inbox-container';
-    viewContainer.appendChild(container);
-  }
-  
-  // Create inbox UI
-  container.innerHTML = `
-    <div class="main-title">
-      <div class="logo">📥</div>
-      <h1>Inbox</h1>
-    </div>
-    
-    <div class="panel-container">
-      <div class="row mb-3">
-        <div class="col-auto ms-auto">
-          <button id="refresh-inbox" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-clockwise"></i> Refresh
-          </button>
-        </div>
-      </div>
-      
-      <div class="row mb-3">
-        <div class="col">
-          <div class="input-group">
-            <input type="text" id="inbox-search" class="form-control" placeholder="Search messages...">
-            <button class="btn btn-outline-secondary" type="button" id="inbox-search-clear">
-              <i class="bi bi-x"></i>
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      <div id="inbox-status" class="alert alert-info">
-        Loading messages...
-      </div>
-      
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <div class="list-group" id="message-list">
-            <!-- Message list items will be added here -->
-          </div>
-        </div>
-        
-        <div class="col-md-8">
-          <div id="message-content" class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-              <div id="message-header">Select a message to view</div>
-              <div id="message-actions" class="d-none">
-                <button id="reply-button" class="btn btn-sm btn-outline-primary">
-                  <i class="bi bi-reply"></i> Reply
-                </button>
-                <button id="delete-button" class="btn btn-sm btn-outline-danger">
-                  <i class="bi bi-trash"></i> Delete
-                </button>
-              </div>
-            </div>
-            <div class="card-body">
-              <div id="message-details">
-                <p class="text-muted">No message selected</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `;
+export async function initInboxView() {
+  await loadTemplate('components/Inbox/inbox.html', 'inbox-view');
   
   // Set up event listeners
   document.getElementById('refresh-inbox').addEventListener('click', loadMessages);
-  
   const searchInput = document.getElementById('inbox-search');
   searchInput.addEventListener('input', filterMessages);
-  
   document.getElementById('inbox-search-clear').addEventListener('click', () => {
     searchInput.value = '';
     filterMessages();
@@ -92,7 +18,7 @@ function initInboxView() {
 }
 
 // Add a global refresh function that app.js can call
-function refreshInbox() {
+export function refreshInbox() {
   // Check if the inbox view has been initialized
   const statusElement = document.getElementById('inbox-status');
   if (!statusElement) {
@@ -371,12 +297,6 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
-
-// Make sure initInboxView is globally available
-window.initInboxView = initInboxView;
-
-// Make sure the function is globally available
-window.refreshInbox = refreshInbox;
 
 // Initialize on DOMContentLoaded if not loaded by app.js
 document.addEventListener('DOMContentLoaded', function() {

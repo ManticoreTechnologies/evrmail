@@ -10,7 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.3/font/bootstrap-icons.css" rel="stylesheet">
   
   <!-- Custom CSS -->
-  <link href="styles.css" rel="stylesheet">
+  <link href="styles/styles.css" rel="stylesheet">
   
   <!-- Eel JS -->
   <script type="text/javascript" src="/eel.js"></script>
@@ -18,16 +18,8 @@
   <!-- QR Code library -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   
-  <!-- Load all view scripts -->
-  <script src="inbox.js"></script>
-  <script src="compose.js"></script>
-  <script src="wallet.js"></script>
-  <script src="browser.js"></script>
-  <script src="settings.js"></script>
-  <script src="logs.js"></script>
-  
-  <!-- Main app script (load last) -->
-  <script src="app.js"></script>
+  <!-- Main app script (ES6 module) -->
+  <script type="module" src="app.js"></script>
 </head>
 <body>
   <div class="app-container" id="app-container">

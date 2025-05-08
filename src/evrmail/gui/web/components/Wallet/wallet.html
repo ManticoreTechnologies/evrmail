@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet - EvrMail</title>
+</head>
+<body>
+  <div id="wallet-container">
+    <div class="container">
+      <h1 class="mb-4">
+        <i class="bi bi-wallet2"></i> Wallet Overview
+      </h1>
+      <ul class="nav nav-tabs" id="walletTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="addresses-tab" data-bs-toggle="tab" data-bs-target="#addresses-content" 
+                  type="button" role="tab" aria-controls="addresses-content" aria-selected="true">
+            Addresses
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="balances-tab" data-bs-toggle="tab" data-bs-target="#balances-content" 
+                  type="button" role="tab" aria-controls="balances-content" aria-selected="false">
+            Balances
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="utxos-tab" data-bs-toggle="tab" data-bs-target="#utxos-content" 
+                  type="button" role="tab" aria-controls="utxos-content" aria-selected="false">
+            UTXOs
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="send-tab" data-bs-toggle="tab" data-bs-target="#send-content" 
+                  type="button" role="tab" aria-controls="send-content" aria-selected="false">
+            Send
+          </button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="receive-tab" data-bs-toggle="tab" data-bs-target="#receive-content" 
+                  type="button" role="tab" aria-controls="receive-content" aria-selected="false">
+            Receive
+          </button>
+        </li>
+      </ul>
+      <div class="tab-content p-3 border border-top-0 rounded-bottom" id="walletTabsContent">
+        <!-- Addresses Tab -->
+        <div class="tab-pane fade show active" id="addresses-content" role="tabpanel" aria-labelledby="addresses-tab">
+          <div class="d-flex justify-content-between mb-3">
+            <h3>Derived Addresses</h3>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="show-labeled-only">
+              <label class="form-check-label" for="show-labeled-only">
+                Only show user-labeled addresses
+              </label>
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Index</th>
+                  <th>Label</th>
+                  <th>Address</th>
+                  <th>Path</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="address-list">
+                <tr>
+                  <td colspan="5" class="text-center">Loading addresses...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Balances Tab -->
+        <div class="tab-pane fade" id="balances-content" role="tabpanel" aria-labelledby="balances-tab">
+          <h3 class="mb-3">Wallet Balances</h3>
+          <div id="balances-container">
+            <p class="text-center">Loading balances...</p>
+          </div>
+        </div>
+        <!-- UTXOs Tab -->
+        <div class="tab-pane fade" id="utxos-content" role="tabpanel" aria-labelledby="utxos-tab">
+          <h3 class="mb-3">Unspent Transaction Outputs</h3>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>TXID</th>
+                  <th>Index</th>
+                  <th>Address</th>
+                  <th>Asset</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="utxo-list">
+                <tr>
+                  <td colspan="6" class="text-center">Loading UTXOs...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <!-- Send Tab -->
+        <div class="tab-pane fade" id="send-content" role="tabpanel" aria-labelledby="send-tab">
+          <h3 class="mb-3">Send Funds</h3>
+          <form id="send-form">
+            <div class="mb-3">
+              <label for="send-address" class="form-label">Recipient Address</label>
+              <input type="text" class="form-control" id="send-address" placeholder="Enter recipient address" required>
+            </div>
+            <div class="mb-3">
+              <label for="send-amount" class="form-label">Amount</label>
+              <div class="input-group">
+                <input type="number" step="0.00000001" min="0.00000001" class="form-control" id="send-amount" placeholder="0.0" required>
+                <span class="input-group-text">EVR</span>
+              </div>
+            </div>
+            <div class="mb-3 form-check">
+              <input type="checkbox" class="form-check-input" id="send-dry-run">
+              <label class="form-check-label" for="send-dry-run">Dry run (simulate, don't broadcast)</label>
+            </div>
+            <div id="send-status" class="alert d-none" role="alert"></div>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-send"></i> Send
+            </button>
+          </form>
+        </div>
+        <!-- Receive Tab -->
+        <div class="tab-pane fade" id="receive-content" role="tabpanel" aria-labelledby="receive-tab">
+          <h3 class="mb-3">Generate Receiving Address</h3>
+          <form id="receive-form">
+            <div class="mb-3">
+              <label for="wallet-select" class="form-label">Wallet</label>
+              <select class="form-select" id="wallet-select">
+                <option value="default" selected>Default Wallet</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="address-label" class="form-label">Address Label (optional)</label>
+              <input type="text" class="form-control" id="address-label" placeholder="Enter a friendly name for this address">
+            </div>
+            <div id="receive-status" class="alert d-none" role="alert"></div>
+            <button type="submit" class="btn btn-primary mb-3">
+              <i class="bi bi-plus-circle"></i> Generate Address
+            </button>
+          </form>
+          <div id="address-result" class="d-none card mt-4">
+            <div class="card-body text-center">
+              <h5 class="card-title">New Address</h5>
+              <div id="qr-code" class="mx-auto mb-3" style="width:150px; height:150px;"></div>
+              <p class="card-text mb-0"><strong>Address:</strong></p>
+              <p id="new-address" class="font-monospace bg-light p-2 rounded">(address will appear here)</p>
+              <button id="copy-address" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-clipboard"></i> Copy Address
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

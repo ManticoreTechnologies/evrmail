@@ -1,49 +1,8 @@
+import { loadTemplate } from '../../utils.js';
+
 // Compose view implementation
-function initComposeView() {
-  const view = document.getElementById('compose-view');
-  
-  // Create compose UI
-  view.innerHTML = `
-    <div class="container">
-      <h1 class="text-center mb-4">📨 Compose New Message</h1>
-      
-      <form id="compose-form">
-        <div class="mb-3">
-          <label for="recipient" class="form-label">Recipient</label>
-          <input type="text" class="form-control" id="recipient" placeholder="Enter recipient address" required>
-        </div>
-        
-        <div class="mb-3">
-          <label for="subject" class="form-label">Subject</label>
-          <input type="text" class="form-control" id="subject" placeholder="Enter subject" required>
-        </div>
-        
-        <div class="mb-3">
-          <label for="outbox" class="form-label">Outbox Asset (optional)</label>
-          <select class="form-select" id="outbox"></select>
-          <div class="form-text">Leave blank to auto-select an outbox asset</div>
-        </div>
-        
-        <div class="mb-3">
-          <label for="message" class="form-label">Message</label>
-          <textarea class="form-control" id="message" rows="10" placeholder="Write your message here..." required></textarea>
-        </div>
-        
-        <div class="mb-3 form-check">
-          <input type="checkbox" class="form-check-input" id="dry-run">
-          <label class="form-check-label" for="dry-run">🧪 Dry-Run Only (simulate, no broadcast)</label>
-        </div>
-        
-        <div id="status-message" class="alert d-none" role="alert"></div>
-        
-        <div class="text-center">
-          <button type="submit" class="btn btn-primary">
-            <i class="bi bi-send"></i> Send Message
-          </button>
-        </div>
-      </form>
-    </div>
-  `;
+export async function initComposeView() {
+  await loadTemplate('components/Compose/compose.html', 'compose-view');
   
   // Load available outbox assets
   loadOutboxAssets();

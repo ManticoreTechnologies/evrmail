@@ -1,7 +1,13 @@
 // EvrMail Browser - Fully embedded browser module
 
+// import browserTemplate from './browser.html'; // If using a bundler, otherwise use fetch
+
+import { loadTemplate } from '../../utils.js';
+
 // Initialize the browser view with UI elements and event handlers
-function initBrowserView() {
+export async function initBrowserView() {
+    await loadTemplate('components/Browser/browser.html', 'browser-view');
+
     const browserContainer = document.getElementById('browser-view');
     if (!browserContainer) {
         console.error('Browser view container not found');
@@ -18,49 +24,6 @@ function initBrowserView() {
     browserContainer.style.backgroundColor = 'var(--dark-bg)';
     browserContainer.style.overflow = 'hidden';
     browserContainer.style.boxSizing = 'border-box';
-
-    // Set up browser UI elements
-    browserContainer.innerHTML = `
-        <div style="display: flex; flex-direction: column; height: 100%; width: 100%;">
-            <div class="main-title" style="margin-bottom: 10px; padding: 5px;">
-                <div class="logo">🌐</div>
-                <h1>EvrMail Browser</h1>
-            </div>
-            
-            <div class="browser-toolbar" style="margin-bottom: 5px; padding: 8px;">
-                <div class="url-container">
-                    <input type="text" id="url-input" placeholder="Enter URL or EVR domain (e.g. example.com or chess.evr)" class="url-input">
-                    <button id="load-url-btn" class="btn btn-primary">Load</button>
-                </div>
-                <div class="browser-actions">
-                    <button id="refresh-btn" class="btn btn-secondary">Refresh</button>
-                    <button id="back-btn" class="btn btn-secondary">Back</button>
-                    <button id="open-external-btn" class="btn btn-outline-secondary">Open in System Browser</button>
-                </div>
-            </div>
-            
-            <div class="browser-status-bar" style="margin-bottom: 5px; padding: 4px 8px;">
-                <span id="browser-status">Ready</span>
-                <button id="clear-browser-btn" class="btn btn-sm btn-secondary">Clear</button>
-            </div>
-            
-            <div id="evr-site-info" class="evr-site-info" style="display: none; margin-bottom: 5px; padding: 6px 10px;">
-                <div class="site-info-header">
-                    <span id="evr-site-title">EVR Domain</span>
-                    <span id="evr-domain-badge" class="domain-badge">EVR</span>
-                </div>
-                <div id="evr-site-description" class="site-description"></div>
-            </div>
-            
-            <div class="browser-content" style="position: relative; flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; margin: 0; padding: 0;">
-                <div id="loading-indicator">
-                    <div class="spinner"></div>
-                    <div>Loading content...</div>
-                </div>
-                <iframe id="browser-iframe" sandbox="allow-scripts allow-forms allow-same-origin allow-popups" class="hidden" style="flex: 1; width: 100%; height: 100%; border: none; margin: 0; padding: 0;"></iframe>
-            </div>
-        </div>
-    `;
 
     // Get references to all required elements
     const urlInput = document.getElementById('url-input');
@@ -442,6 +405,3 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize the browser view when the tab is loaded
     initBrowserView();
 });
-
-// Make initBrowserView available globally
-window.initBrowserView = initBrowserView;

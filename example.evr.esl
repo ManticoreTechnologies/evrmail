@@ -3,7 +3,7 @@
   "site_title": "Search Evrmore",
   "site_description": "The decentralized search engine for the Evrmore network.",
   "site_version": "1.0",
-  "admin_asset": "SEARCH",
+  "admin_asset": "EXAMPLE",
   "content_type": "text/html",
   "content_ipfs": "QmaAjF1uUT4dbcGn1gvD3ATJmqptQ8aFvrMAsQzABy9mP7"
 }

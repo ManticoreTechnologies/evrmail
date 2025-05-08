@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Logs - EvrMail</title>
+</head>
+<body>
+  <div class="container">
+    <div class="row mb-3">
+      <div class="col">
+        <h1>📜 Application Logs</h1>
+      </div>
+      <div class="col-auto">
+        <button id="refresh-logs" class="btn btn-outline-secondary">
+          <i class="bi bi-arrow-clockwise"></i> Refresh
+        </button>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col-md-3">
+        <label class="form-label">Categories</label>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="APP" id="category-app" checked>
+          <label class="form-check-label" for="category-app">APP</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="GUI" id="category-gui" checked>
+          <label class="form-check-label" for="category-gui">GUI</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="DAEMON" id="category-daemon" checked>
+          <label class="form-check-label" for="category-daemon">DAEMON</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="WALLET" id="category-wallet" checked>
+          <label class="form-check-label" for="category-wallet">WALLET</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="CHAIN" id="category-chain" checked>
+          <label class="form-check-label" for="category-chain">CHAIN</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="NETWORK" id="category-network" checked>
+          <label class="form-check-label" for="category-network">NETWORK</label>
+        </div>
+        <div class="form-check">
+          <input class="form-check-input category-filter" type="checkbox" value="DEBUG" id="category-debug" checked>
+          <label class="form-check-label" for="category-debug">DEBUG</label>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Log Level</label>
+        <select id="log-level" class="form-select">
+          <option value="all" selected>All Levels</option>
+          <option value="debug">Debug & Above</option>
+          <option value="info">Info & Above</option>
+          <option value="warning">Warning & Above</option>
+          <option value="error">Error & Above</option>
+          <option value="critical">Critical Only</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Filter</label>
+        <div class="input-group">
+          <input type="text" id="log-filter" class="form-control" placeholder="Filter logs...">
+          <button class="btn btn-outline-secondary" type="button" id="log-filter-clear">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="row mb-3">
+      <div class="col">
+        <div class="d-flex justify-content-between">
+          <button id="clear-logs" class="btn btn-outline-danger">
+            <i class="bi bi-trash"></i> Clear Display
+          </button>
+          <button id="save-logs" class="btn btn-outline-primary">
+            <i class="bi bi-download"></i> Save Logs
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <div id="logs-container" class="card">
+          <div class="card-body" style="max-height: 60vh; overflow-y: auto; font-family: monospace; font-size: 0.9rem;">
+            <div id="logs-content">Loading logs...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html> 

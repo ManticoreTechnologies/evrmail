@@ -1,0 +1,74 @@
+<div class="container">
+  <div class="row mb-4">
+    <div class="col">
+      <h1>Welcome to EvrMail</h1>
+      <p class="lead">Secure, decentralized messaging on the Everchain blockchain</p>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <div class="col-md-4 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">📬 Messages</h5>
+          <p class="card-text">Check your inbox for new messages or compose a new one.</p>
+          <div class="mt-3">
+            <button class="btn btn-primary me-2" onclick="showView('inbox')">
+              <i class="bi bi-inbox"></i> Inbox
+            </button>
+            <button class="btn btn-outline-primary" onclick="showView('compose')">
+              <i class="bi bi-pencil"></i> Compose
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">💰 Wallet</h5>
+          <p class="card-text">Manage your EVR assets, send and receive tokens.</p>
+          <div class="mt-3">
+            <button class="btn btn-primary" onclick="showView('wallet')">
+              <i class="bi bi-wallet2"></i> Open Wallet
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <div class="card h-100">
+        <div class="card-body text-center">
+          <h5 class="card-title">🌐 Browser</h5>
+          <p class="card-text">Browse EVR domains and decentralized content.</p>
+          <div class="mt-3">
+            <button class="btn btn-primary" onclick="showView('browser')">
+              <i class="bi bi-globe"></i> Open Browser
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">Network Status</div>
+        <div class="card-body">
+          <div id="network-status">
+            <p class="text-center text-muted">Loading network status...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6 mb-3">
+      <div class="card">
+        <div class="card-header">Quick Stats</div>
+        <div class="card-body">
+          <div id="quick-stats">
+            <p class="text-center text-muted">Loading stats...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

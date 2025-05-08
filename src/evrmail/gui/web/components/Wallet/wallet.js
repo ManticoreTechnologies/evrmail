@@ -1,5 +1,11 @@
-// Wallet view implementation
-function initWalletView() {
+import { loadTemplate } from '../../utils.js';
+
+// import walletTemplate from './wallet.html'; // If using a bundler, otherwise use fetch
+
+export async function initWalletView() {
+  await loadTemplate('components/Wallet/wallet.html', 'wallet-view');
+  // Set up event listeners and any initial logic here
+  
   const view = document.getElementById('wallet-view');
   
   // Create wallet UI with tabs

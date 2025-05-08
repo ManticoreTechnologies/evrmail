@@ -11,22 +11,20 @@ const appState = {
 
 // View components
 const views = {
-  loading: { init: initLoadingView, element: 'loading-view' },
-  home: { init: initHomeView, element: 'home-view' },
-  inbox: { init: initInboxView, element: 'inbox-view' },
-  compose: { init: initComposeView, element: 'compose-view' },
-  wallet: { init: initWalletView, element: 'wallet-view' },
-  browser: { init: initBrowserView, element: 'browser-view' },
-  settings: { init: initSettingsView, element: 'settings-view' },
-  logs: { init: initLogsView, element: 'logs-view' }
+  loading: { import: () => import('./components/Loading/loading.js'), element: 'loading-view', fn: 'initLoadingView' },
+  home: { import: () => import('./components/Home/home.js'), element: 'home-view', fn: 'initHomeView' },
+  inbox: { import: () => import('./components/Inbox/inbox.js'), element: 'inbox-view', fn: 'initInboxView' },
+  compose: { import: () => import('./components/Compose/compose.js'), element: 'compose-view', fn: 'initComposeView' },
+  wallet: { import: () => import('./components/Wallet/wallet.js'), element: 'wallet-view', fn: 'initWalletView' },
+  browser: { import: () => import('./components/Browser/browser.js'), element: 'browser-view', fn: 'initBrowserView' },
+  settings: { import: () => import('./components/Settings/settings.js'), element: 'settings-view', fn: 'initSettingsView' },
+  logs: { import: () => import('./components/Logs/logs.js'), element: 'logs-view', fn: 'initLogsView' }
 };
 
 // Initialize the application
-function initApp() {
+async function initApp() {
   // Create app container divs for all views
   const appContainer = document.getElementById('app-container');
-  
-  // Create view containers
   Object.keys(views).forEach(viewName => {
     const viewDiv = document.createElement('div');
     viewDiv.id = views[viewName].element;
@@ -37,18 +35,30 @@ function initApp() {
   
   // Show loading view first
   document.getElementById('loading-view').style.display = 'block';
-  views.loading.init();
+  const loadingMod = await views.loading.import();
+  if (loadingMod && typeof loadingMod[views.loading.fn] === 'function') {
+    await loadingMod[views.loading.fn]();
+  }
   
-  // Initialize other views but keep them hidden
-  Object.keys(views).forEach(viewName => {
-    if (viewName !== 'loading') {
+  // Dynamically import and initialize other views (except loading, home)
+  for (const viewName of Object.keys(views)) {
+    if (viewName !== 'loading' && viewName !== 'home') {
       try {
-        views[viewName].init();
+        const mod = await views[viewName].import();
+        if (mod && typeof mod[views[viewName].fn] === 'function') {
+          await mod[views[viewName].fn]();
+        }
       } catch (e) {
         console.error(`Error initializing ${viewName} view:`, e);
       }
     }
-  });
+  }
+  
+  // Initialize Home view as well
+  const homeMod = await views.home.import();
+  if (homeMod && typeof homeMod[views.home.fn] === 'function') {
+    await homeMod[views.home.fn]();
+  }
   
   // Set up navigation
   setupNavigation();
