@@ -7,12 +7,35 @@ from hdwallet.cryptocurrencies import Evrmore
 from hdwallet.mnemonics.bip39 import BIP39Mnemonic
 from hdwallet.derivations import BIP44Derivation
 from mnemonic import Mnemonic
-
+import hashlib
 mnemo = Mnemonic("english")
 
 from evrmail.wallet import (
     WALLET_DIR
 )
+
+def load_utxos():
+    from evrmail.daemon.__main__ import MEMPOOL_UTXO_FILE, CONFIRMED_UTXO_FILE
+    mempool = {}
+    confirmed = {}
+    if MEMPOOL_UTXO_FILE.exists():
+        mempool = json.loads(MEMPOOL_UTXO_FILE.read_text())
+    if CONFIRMED_UTXO_FILE.exists():
+        confirmed = json.loads(CONFIRMED_UTXO_FILE.read_text())
+    return {"mempool": mempool, "confirmed": confirmed}
+def load_asset_utxos(unspent: bool = True):
+    utxos = load_utxos()
+    asset_utxos = {}
+    for address, utxos in utxos.get("confirmed", {}).items():
+        for utxo in utxos:
+            if utxo.get("spent") == False:
+                if utxo.get("asset") is not None:
+                    asset_utxos[address] = utxo
+    return asset_utxos
+
+def get_first_outbox_utxo():
+    utxos = load_asset_utxos(unspent=True)
+    return utxos[list(utxos.keys())[0]]
 def load_all_wallet_keys():
     # List all wallets by name
     wallets = list_wallets()

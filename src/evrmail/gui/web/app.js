@@ -15,6 +15,7 @@ const views = {
   home: { import: () => import('./components/Home/home.js'), element: 'home-view', fn: 'initHomeView' },
   inbox: { import: () => import('./components/Inbox/inbox.js'), element: 'inbox-view', fn: 'initInboxView' },
   compose: { import: () => import('./components/Compose/compose.js'), element: 'compose-view', fn: 'initComposeView' },
+  contacts: { import: () => import('./components/Contacts/contacts.js'), element: 'contacts-view', fn: 'initContactsView' },
   wallet: { import: () => import('./components/Wallet/wallet.js'), element: 'wallet-view', fn: 'initWalletView' },
   browser: { import: () => import('./components/Browser/browser.js'), element: 'browser-view', fn: 'initBrowserView' },
   settings: { import: () => import('./components/Settings/settings.js'), element: 'settings-view', fn: 'initSettingsView' },

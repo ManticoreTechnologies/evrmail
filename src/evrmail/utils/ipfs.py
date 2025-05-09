@@ -10,6 +10,7 @@ import tarfile
 import urllib.request
 import requests
 import base64
+import json
 
 # evrmail/utils/ipfs.py
 

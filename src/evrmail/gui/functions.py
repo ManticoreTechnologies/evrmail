@@ -14,7 +14,7 @@ from datetime import datetime
 from evrmail.wallet.utils import calculate_balances, load_all_wallet_keys
 from evrmail.wallet.addresses import get_all_addresses
 from evrmail.wallet.store import list_wallets
-from evrmail.commands.send.send_msg import send_msg_core
+from evrmail.commands.send.send_msg import send_msg_core, send_contact_request_core
 from evrmail.commands.send.send_evr import send_evr_tx
 from evrmail.commands.receive import receive as receive_command
 from evrmail.utils import (
@@ -22,6 +22,9 @@ from evrmail.utils import (
     APP, GUI, DAEMON, WALLET, CHAIN, NETWORK, DEBUG
 )
 from evrmail.daemon import start_daemon_threaded
+from evrmail.config import load_config, save_config
+from evrmail.crypto import validate_evr_address
+from evrmail.daemon import EVRMailDaemon
 
 # Global objects
 _daemon_thread = None
@@ -457,19 +460,18 @@ def send_evr(address, amount, dry_run=False):
 def generate_receive_address(wallet_name="default", friendly_name=None):
     """Generate a new receiving address"""
     try:
-        result = receive_command(friendly_name=friendly_name, wallet_name=wallet_name)
-        
-        if isinstance(result, dict) and "address" in result:
-            return {
-                "success": True,
-                "address": result.get("address"),
-                "friendly_name": friendly_name
-            }
-        else:
+        from evrmail.wallet.addresses import create_new_receive_address
+        result = create_new_receive_address(wallet_name=wallet_name, friendly_name=friendly_name)
+        if not result or not isinstance(result, dict) or "address" not in result:
             return {
                 "success": False,
                 "error": "Failed to generate address"
             }
+        return {
+            "success": True,
+            "address": result.get("address"),
+            "friendly_name": friendly_name
+        }
     except Exception as e:
         gui_log("error", f"Error generating address: {str(e)}")
         return {
@@ -1138,6 +1140,169 @@ def open_in_system_browser(url):
         return {"success": True}
     except Exception as e:
         gui_log("error", f"Error opening URL in system browser: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def get_contacts():
+    """Get list of contacts from config."""
+    try:
+        config = load_config()
+        contacts = config.get("contacts", {})
+        gui_log("debug", f"Retrieved {len(contacts)} contacts")
+        return contacts
+    except Exception as e:
+        gui_log("error", f"Error getting contacts: {str(e)}")
+        return {}
+
+@eel.expose
+def get_contact_requests():
+    """Get list of pending contact requests."""
+    try:
+        config = load_config()
+        requests = config.get("contact_requests", {})
+        gui_log("debug", f"Retrieved {len(requests)} contact requests")
+        return requests
+    except Exception as e:
+        gui_log("error", f"Error getting contact requests: {str(e)}")
+        return {}
+
+@eel.expose
+def send_contact_request(address: str, name: str = None, address_mode: str = "random", from_address: str = None, dry_run: bool = False):
+    """Send a contact request to another user, with address selection mode."""
+    try:
+        gui_log("info", f"Sending contact request to {address}" + (" (dry run)" if dry_run else ""))
+        
+        # Validate recipient address
+        if not validate_evr_address(address)["isvalid"]:
+            return {"success": False, "error": "Invalid Evrmore address"}
+
+        # Determine which address to use for this contact request
+        if address_mode == "random":
+            # Pick a random address from wallet
+            all_addrs = get_wallet_addresses()
+            import random
+            if not all_addrs:
+                return {"success": False, "error": "No addresses in wallet"}
+            sender_addr = random.choice(all_addrs)["address"]
+        elif address_mode == "new":
+            # Generate a new address
+            new_addr_result = generate_receive_address()
+            if not new_addr_result["success"]:
+                return {"success": False, "error": new_addr_result.get("error", "Failed to generate new address")}
+            sender_addr = new_addr_result["address"]
+        elif address_mode == "specify":
+            # Use the specified address, but validate ownership
+            all_addrs = [a["address"] for a in get_wallet_addresses()]
+            if not from_address or from_address not in all_addrs:
+                return {"success": False, "error": "Specified address not found in wallet"}
+            sender_addr = from_address
+        else:
+            return {"success": False, "error": f"Invalid address selection mode: {address_mode}"}
+        
+        # Log the selected address
+        gui_log("info", f"Using sender address: {sender_addr} for contact request to {address}")
+
+        try:
+            # Import directly in this block for better error reporting
+            from evrmail.commands.send.send_msg import send_contact_request_core
+            
+            # Call the core function directly for better error handling
+            txid = send_contact_request_core(
+                to_address=address,
+                from_address=sender_addr,
+                name=name,
+                fee_rate=0.01,
+                dry_run=dry_run,
+                debug=True  # Enable debug mode to see more details
+            )
+            
+            if not txid:
+                return {"success": False, "error": "Failed to send contact request - no transaction ID returned"}
+                
+            gui_log("info", f"Successfully {'simulated' if dry_run else 'sent'} contact request with txid: {txid}")
+            return {"success": True, "txid": txid, "dry_run": dry_run}
+        except Exception as inner_e:
+            gui_log("error", f"Error in send_contact_request_core: {inner_e}")
+            import traceback
+            gui_log("error", traceback.format_exc())
+            return {"success": False, "error": f"Failed to send request: {str(inner_e)}"}
+            
+    except Exception as e:
+        gui_log("error", f"Error sending contact request: {e}")
+        import traceback
+        gui_log("error", traceback.format_exc())
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def remove_contact(address: str):
+    """Remove a contact."""
+    try:
+        config = load_config()
+        contacts = config.get("contacts", {})
+        
+        if address not in contacts:
+            return {"success": False, "error": "Contact not found"}
+            
+        del contacts[address]
+        config["contacts"] = contacts
+        save_config(config)
+        return {"success": True}
+        
+    except Exception as e:
+        gui_log("error", f"Error removing contact: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def accept_contact_request(address: str):
+    """Accept a contact request."""
+    try:
+        config = load_config()
+        requests = config.get("contact_requests", {})
+        contacts = config.get("contacts", {})
+        
+        if address not in requests:
+            return {"success": False, "error": "Contact request not found"}
+            
+        # Move from requests to contacts
+        contact_info = requests[address]
+        contact_info["status"] = "accepted"
+        contacts[address] = contact_info
+        
+        # Remove from requests
+        del requests[address]
+        
+        # Update config
+        config["contact_requests"] = requests
+        config["contacts"] = contacts
+        save_config(config)
+        
+        return {"success": True}
+        
+    except Exception as e:
+        gui_log("error", f"Error accepting contact request: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@eel.expose
+def reject_contact_request(address: str):
+    """Reject a contact request."""
+    try:
+        config = load_config()
+        requests = config.get("contact_requests", {})
+        
+        if address not in requests:
+            return {"success": False, "error": "Contact request not found"}
+            
+        # Remove from requests
+        del requests[address]
+        
+        # Update config
+        config["contact_requests"] = requests
+        save_config(config)
+        
+        return {"success": True}
+        
+    except Exception as e:
+        gui_log("error", f"Error rejecting contact request: {str(e)}")
         return {"success": False, "error": str(e)}
 
 def expose_all_functions():

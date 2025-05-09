@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EvrMail - Contacts</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Contacts</h1>
+        
+        <!-- Contact Requests Section -->
+        <div class="section">
+            <h2>Contact Requests</h2>
+            <div id="contact-requests" class="list">
+                <!-- Contact requests will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Contacts List Section -->
+        <div class="section">
+            <h2>Your Contacts</h2>
+            <div id="contacts-list" class="list">
+                <!-- Contacts will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Add Contact Form -->
+        <div class="section">
+            <h2>Add New Contact</h2>
+            <form id="add-contact-form">
+                <div class="form-group">
+                    <label for="address">Evrmore Address:</label>
+                    <input type="text" id="address" required>
+                </div>
+                <div class="form-group">
+                    <label for="name">Name (optional):</label>
+                    <input type="text" id="name">
+                </div>
+                <button type="submit">Send Contact Request</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Load contacts and requests
+        function loadContacts() {
+            eel.get_contacts()(function(contacts) {
+                const contactsList = document.getElementById('contacts-list');
+                contactsList.innerHTML = '';
+                
+                for (const [address, info] of Object.entries(contacts)) {
+                    const contact = document.createElement('div');
+                    contact.className = 'contact-item';
+                    contact.innerHTML = `
+                        <div class="contact-info">
+                            <h3>${info.name}</h3>
+                            <p>${address}</p>
+                            <p>Public Key: ${info.pubkey || 'Not shared'}</p>
+                        </div>
+                        <button onclick="removeContact('${address}')">Remove</button>
+                    `;
+                    contactsList.appendChild(contact);
+                }
+            });
+        }
+        
+        function loadRequests() {
+            eel.get_contact_requests()(function(requests) {
+                const requestsList = document.getElementById('contact-requests');
+                requestsList.innerHTML = '';
+                
+                for (const [address, info] of Object.entries(requests)) {
+                    const request = document.createElement('div');
+                    request.className = 'request-item';
+                    request.innerHTML = `
+                        <div class="request-info">
+                            <h3>${info.name}</h3>
+                            <p>${address}</p>
+                            <p>Public Key: ${info.pubkey || 'Not shared'}</p>
+                        </div>
+                        <div class="request-actions">
+                            <button onclick="acceptRequest('${address}')">Accept</button>
+                            <button onclick="rejectRequest('${address}')">Reject</button>
+                        </div>
+                    `;
+                    requestsList.appendChild(request);
+                }
+            });
+        }
+        
+        // Handle form submission
+        document.getElementById('add-contact-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const address = document.getElementById('address').value;
+            const name = document.getElementById('name').value;
+            
+            eel.send_contact_request(address, name)(function(success) {
+                if (success) {
+                    alert('Contact request sent!');
+                    document.getElementById('address').value = '';
+                    document.getElementById('name').value = '';
+                } else {
+                    alert('Failed to send contact request');
+                }
+            });
+        });
+        
+        // Contact management functions
+        function removeContact(address) {
+            if (confirm('Are you sure you want to remove this contact?')) {
+                eel.remove_contact(address)(function(success) {
+                    if (success) {
+                        loadContacts();
+                    }
+                });
+            }
+        }
+        
+        function acceptRequest(address) {
+            eel.accept_contact_request(address)(function(success) {
+                if (success) {
+                    loadRequests();
+                    loadContacts();
+                }
+            });
+        }
+        
+        function rejectRequest(address) {
+            if (confirm('Are you sure you want to reject this contact request?')) {
+                eel.reject_contact_request(address)(function(success) {
+                    if (success) {
+                        loadRequests();
+                    }
+                });
+            }
+        }
+        
+        // Initial load
+        loadContacts();
+        loadRequests();
+        
+        // Refresh periodically
+        setInterval(function() {
+            loadContacts();
+            loadRequests();
+        }, 30000);  // Every 30 seconds
+    </script>
+</body>
+</html> 

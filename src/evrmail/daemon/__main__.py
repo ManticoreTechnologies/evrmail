@@ -3,6 +3,7 @@
 import json
 import os
 import time
+import traceback
 from pathlib import Path
 import logging
 
@@ -23,7 +24,8 @@ from evrmail.utils import (
 from evrmail.daemon import (
     STORAGE_DIR, INBOX_FILE, PROCESSED_TXIDS_FILE,
     load_inbox, save_inbox, load_processed_txids, save_processed_txids,
-    monitor_confirmed_utxos_realtime
+    monitor_confirmed_utxos_realtime,
+    EVRMailDaemon
 )
 
 # ─── 📂 Paths ──────────────────────────────────────────────────────────────────
@@ -166,17 +168,97 @@ def process_transaction(tx, txid, utxo_cache, is_confirmed, debug_mode=False):
                 "explorer_link": f"https://explorer.evrmore.org/tx/{txid}"
             })
             try:
+                # Get any decrypted messages from the payload
                 decrypted_messages = scan_payload(ipfs_hash)
-                if decrypted_messages:
+                
+                contact_requests = []
+                regular_messages = []
+                
+                # Separate contact requests from regular messages
+                for msg in decrypted_messages:
+                    # Get the content either directly or from content field
+                    content = msg.get("content", {})
+                    raw_content = msg.get("raw", {})
+                    
+                    # Try to parse JSON content if it's a string (might be a serialized contact request)
+                    if isinstance(content, str):
+                        try:
+                            parsed_content = json.loads(content)
+                            if isinstance(parsed_content, dict) and parsed_content.get("type") == "contact_request":
+                                # It's a contact request in JSON string format
+                                daemon_log("info", f"Found contact request in JSON string format")
+                                contact_requests.append({"content": parsed_content, "from": parsed_content.get("from")})
+                                continue
+                        except json.JSONDecodeError:
+                            # Not JSON, treat as regular message
+                            pass
+                    
+                    # Check standard contact request format
+                    if isinstance(content, dict) and content.get("type") == "contact_request":
+                        contact_requests.append(msg)
+                        daemon_log("info", f"📇 Received contact request from {content.get('from')}", details={
+                            "from": content.get("from"),
+                            "name": content.get("name", "Unnamed"),
+                            "time": content.get("timestamp")
+                        })
+                    # Also check in raw field if available
+                    elif isinstance(raw_content, dict) and raw_content.get("type") == "contact_request":
+                        contact_requests.append({"content": raw_content, "from": raw_content.get("from")})
+                        daemon_log("info", f"📇 Received contact request from {raw_content.get('from')} (in raw field)")
+                    # Also check if subject is a contact request indicator
+                    elif (isinstance(content, dict) and 
+                          content.get("subject", "").lower() == "contact request" and 
+                          content.get("from") is not None):
+                        try:
+                            # Try to extract contact request data
+                            contact_data = content.get("content", "{}")
+                            if isinstance(contact_data, str):
+                                contact_data = json.loads(contact_data)
+                            
+                            if isinstance(contact_data, dict) and "from" in contact_data:
+                                contact_requests.append({"content": contact_data, "from": contact_data.get("from")})
+                                daemon_log("info", f"📇 Detected contact request by subject from {contact_data.get('from')}")
+                            else:
+                                # Use message data as contact request
+                                contact_requests.append({"content": {
+                                    "type": "contact_request",
+                                    "from": content.get("from"),
+                                    "name": content.get("from"),  # Use address as name if not provided
+                                    "timestamp": content.get("timestamp", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
+                                }, "from": content.get("from")})
+                                daemon_log("info", f"📇 Created contact request from message with Contact Request subject")
+                        except Exception as e:
+                            daemon_log("warning", f"Failed to process potential contact request: {e}")
+                    else:
+                        regular_messages.append(msg)
+                
+                # Add verbose debugging for contact request detection
+                if decrypted_messages and not contact_requests and not regular_messages:
+                    daemon_log("debug", f"Messages found but none classified as contact request or regular message")
+                    # Log first message structure for debugging
+                    if decrypted_messages:
+                        first_msg = decrypted_messages[0]
+                        daemon_log("debug", f"First message structure: {json.dumps(first_msg, default=str)}")
+                
+                # Process contact requests with EVRMailDaemon
+                if contact_requests:
+                    daemon = EVRMailDaemon()
+                    for request in contact_requests:
+                        daemon_log("info", f"Processing contact request from {request.get('from')}")
+                        daemon.process_contact_request(request.get("content"))
+                
+                # Save regular messages to inbox
+                if regular_messages:
                     inbox = load_inbox()
-                    inbox.extend(decrypted_messages)
+                    inbox.extend(regular_messages)
                     save_inbox(inbox)
-                    daemon_log("info", f"✉️ Saved {len(decrypted_messages)} new messages to inbox.", details={
-                        "message_count": len(decrypted_messages),
+                    daemon_log("info", f"✉️ Saved {len(regular_messages)} new messages to inbox.", details={
+                        "message_count": len(regular_messages),
                         "ipfs_cid": ipfs_hash,
-                        "message_subjects": [msg.get("subject", "No Subject") for msg in decrypted_messages[:3]]
+                        "message_subjects": [msg.get("content", {}).get("subject", "No Subject") for msg in regular_messages[:3]]
                     })
-                else:
+                
+                if not decrypted_messages:
                     daemon_log("info", f"ℹ️ No messages for us in payload {ipfs_hash}", details={
                         "ipfs_cid": ipfs_hash,
                         "txid": txid
@@ -211,7 +293,7 @@ def process_transaction(tx, txid, utxo_cache, is_confirmed, debug_mode=False):
                 chain_log("info", f"Found {asset_name} for address {address} in tx {txid}", details={
                     "asset": asset_name,
                     "address": address,
-                    "amount": amount,
+                    "amount": amount * 1e8,
                     "txid": txid,
                     "vout": vout["n"],
                     "explorer_link": f"https://explorer.evrmore.org/tx/{txid}"
@@ -219,7 +301,7 @@ def process_transaction(tx, txid, utxo_cache, is_confirmed, debug_mode=False):
             else:
                 chain_log("info", f"Found EVR for address {address} in tx {txid}", details={
                     "address": address,
-                    "amount": amount,
+                    "amount": amount * 1e8,
                     "txid": txid,
                     "vout": vout["n"],
                     "explorer_link": f"https://explorer.evrmore.org/tx/{txid}"

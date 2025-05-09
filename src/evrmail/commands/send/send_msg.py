@@ -318,3 +318,135 @@ def send_msg_core(
         tx_hash = rpc_client.sendrawtransaction(tx)
         typer.echo(f"✅ Message sent! TXID: {tx_hash}")
         return tx_hash
+
+def send_contact_request_core(
+    to_address: str,
+    from_address: str,
+    name: str = None,
+    fee_rate: float = 0.01,
+    dry_run: bool = False,
+    debug: bool = False
+):
+    """
+    Send a contact request to another EVRMail user.
+    This is a specialized version of send_msg_core for contact requests.
+    
+    Args:
+        to_address: The recipient's EVR address
+        from_address: The sender's EVR address
+        name: Optional name to include with the request
+        fee_rate: Transaction fee rate
+        dry_run: If True, don't actually send the transaction
+        debug: If True, print additional debug information
+        
+    Returns:
+        The transaction ID if successful, None otherwise
+    """
+    import json
+    import time
+    import typer
+    import math
+    import sys
+    from evrmail import rpc_client
+    from evrmail.wallet.addresses import get_all_addresses, get_outbox_address, validate
+    from evrmail.utils.ipfs import add_to_ipfs
+    from evrmail.wallet.tx.create.send_asset import create_send_asset_transaction
+    from evrmail.wallet.addresses import get_public_key_for_address
+    if debug:
+        print(f"Sending contact request from {from_address} to {to_address}")
+    
+    # Validate addresses
+    if not validate(to_address).get('isvalid'):
+        print(f"Invalid recipient address: {to_address}")
+        return None
+    
+    if not validate(from_address).get('isvalid'):
+        print(f"Invalid sender address: {from_address}")
+        return None
+    
+    # Calculate fee rate
+    if fee_rate:
+        fee_rate = math.ceil(int(fee_rate * 1e8))  # EVR → satoshis
+    
+    # Create contact request message
+    contact_request = {
+        "type": "contact_request",
+        "from": from_address,
+        "to": to_address,
+        "name": name or "Unnamed",
+        "encrypted": False,
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    }
+    
+    # Add placeholder pubkey (to be improved later)
+    contact_request["pubkey"] = get_public_key_for_address(from_address)    
+    
+    # Create a batch payload with the contact request
+    batch_payload = {
+        "batch_id": f"contact_req_{int(time.time())}",
+        "messages": [contact_request]
+    }
+    
+    if debug:
+        print(f"Contact request payload:\n{json.dumps(batch_payload, indent=2)}")
+    
+    # Add to IPFS
+    cid = add_to_ipfs(batch_payload)
+    if not cid:
+        print("Failed to add contact request to IPFS")
+        return None
+    
+    # Find outbox asset to use
+    from evrmail.wallet.utils import get_first_outbox_utxo
+    outbox_utxo = get_first_outbox_utxo()
+    outbox = outbox_utxo.get("asset")
+    outbox_balance = outbox_utxo.get("amount")
+    if not outbox:
+        print("Could not find a suitable outbox asset from which to send the request.")
+        return None
+    
+    if debug:
+        print(f"Using outbox asset: {outbox} with balance: {outbox_balance}")
+    
+    # Create the transaction
+    tx, txid = create_send_asset_transaction(
+        from_addresses=[from_address],
+        to_address=from_address,  # Send to self
+        asset_name=outbox,
+        asset_amount=outbox_balance,
+        fee_rate=fee_rate,
+        ipfs_cidv0=cid
+    )
+    
+    if debug:
+        print(f"Created transaction with TXID: {txid}")
+    
+    # Test if the transaction will be accepted
+    result = rpc_client.testmempoolaccept([tx])
+    status = result[0] if result else {}
+    
+    if dry_run:
+        if status.get("txid") == txid and status.get("allowed"):
+            print("✅ Transaction accepted by node using `testmempoolaccept` ✅")
+        else:
+            print(f"❌ Rejected by node: {status.get('reject-reason', 'unknown reason')}")
+            return None
+        
+        print("\n🔍 Dry run Info:")
+        print("─────────────────────────────────────")
+        print(f"🆔 TXID      : {txid}")
+        print(f"📦 IPFS CID  : {cid}")
+        print(f"🧾 Raw Hex   : {tx}")
+        print("─────────────────────────────────────")
+        
+        return txid
+    else:
+        # Real broadcast
+        print("📡 Broadcasting contact request transaction...")
+        try:
+            tx_hash = rpc_client.sendrawtransaction(tx)
+            print(f"✅ Contact request sent! TXID: {tx_hash}")
+            return tx_hash
+        except Exception as e:
+            print(f"❌ Failed to send transaction: {e}")
+            return None

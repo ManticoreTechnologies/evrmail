@@ -1,0 +1,9 @@
+{
+  "site_pubkey": "02b679f444cf89171eab391f5deb59910c5aa087327e0ff69421dbc44f5ec336ec",
+  "site_title": "Chess",
+  "site_description": "Peer to Peer chess with client side cryptographic anti-cheat!",
+  "site_version": "1.0",
+  "admin_asset": "CHESS",
+  "content_type": "text/html",
+  "content_ipns": "k51qzi5uqu5dit4twu44an063vqc3slwewu9f7qtksj6y4s0y37230njljean4"
+}

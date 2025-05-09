@@ -1,6 +1,6 @@
 [project]
 name = "evrmail"
-version = "0.1.10"
+version = "0.1.21"
 description = "Encrypted messaging over Evrmore"
 authors = [{ name = "Manticore Technologies LLC" }]
 dependencies = [

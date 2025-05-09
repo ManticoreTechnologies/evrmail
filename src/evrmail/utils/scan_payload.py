@@ -5,6 +5,7 @@ from evrmail.utils.decrypt_message import decrypt_message
 from evrmail.utils.ipfs import fetch_ipfs_json
 from rich import print
 from evrmail.wallet.utils import list_wallets, load_wallet
+import logging
 
 def get_wallet_decryption_keys() -> Dict[str, str]:
     """Returns a mapping of addresses to their private keys from all wallets."""
@@ -37,22 +38,45 @@ def scan_payload(cid: str) -> List[Dict[str, Any]]:
     batch_id = batch.get("batch_id", "unknown")
     found_messages = []
     
+    # Check if this is a contact request batch
+    if batch_id and isinstance(batch_id, str) and batch_id.startswith("contact_req_"):
+        print(f"[cyan]📇 Detected contact request batch: {batch_id}[/cyan]")
+        # Extra debug for contact request batch
+        print(f"[cyan]Batch payload structure: {json.dumps(batch, indent=2)}[/cyan]")
+    
     if type(messages) is list:
         for message in messages:
             msg = message
             try:
                 print(f"[DEBUG] Message raw payload:\n{json.dumps(msg, indent=2)}")
                 to_address = msg.get("to")
+                
+                # Check if this is a contact request message
+                if msg.get("type") == "contact_request":
+                    print(f"[cyan]📇 Found contact request in batch[/cyan]")
+                    
+                    # Even if not for us, log it for debugging
+                    if to_address not in keymap:
+                        logging.info(f"Contact request found but not for our addresses: {to_address}")
+                        print(f"[yellow]Contact request not for our addresses: {to_address}[/yellow]")
+                        continue
 
+                # Check if message is for one of our addresses
                 if to_address in keymap:
                     privkey = keymap[to_address]
                     if not privkey:
                         print(f"[yellow]⚠ No private key configured for address: {to_address}[/yellow]")
                         continue
-                    if msg["encrypted"] == True:    
+                    
+                    # Process based on encrypted flag
+                    if msg.get("encrypted", True) == True:    
                         decrypted = decrypt_message(msg, privkey)
                     else:
                         decrypted = msg
+                        # For non-encrypted messages, preserve the original message type
+                        # This helps with identifying contact requests
+                        print(f"[green]Message is not encrypted, preserving original data[/green]")
+                    
                     msg["batch_id"] = batch_id
                     found_messages.append({
                         "to": to_address,
@@ -67,15 +91,27 @@ def scan_payload(cid: str) -> List[Dict[str, Any]]:
         try:
             print(f"[DEBUG] Message raw payload:\n{json.dumps(msg, indent=2)}")
             to_address = msg.get("to")
+            
+            # Check if this is a contact request message
+            if msg.get("type") == "contact_request":
+                print(f"[cyan]📇 Found single contact request message[/cyan]")
+                
+                # Even if not for us, log it for debugging
+                if to_address not in keymap:
+                    logging.info(f"Contact request found but not for our addresses: {to_address}")
+                    print(f"[yellow]Contact request not for our addresses: {to_address}[/yellow]")
 
             if to_address in keymap:
                 privkey = keymap[to_address]
                 if not privkey:
                     print(f"[yellow]⚠ No private key configured for address: {to_address}[/yellow]")
-                if msg["encrypted"] == True:    
+                if msg.get("encrypted", True) == True:    
                     decrypted = decrypt_message(msg, privkey)
                 else:
                     decrypted = msg
+                    # For non-encrypted messages, preserve the original message type
+                    print(f"[green]Message is not encrypted, preserving original data[/green]")
+                
                 msg["batch_id"] = batch_id
                 found_messages.append({
                     "to": to_address,
