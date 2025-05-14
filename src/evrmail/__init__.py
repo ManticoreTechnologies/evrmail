@@ -45,7 +45,7 @@ for directory in [HOME_DIR, WALLETS_DIR, KEYS_DIR, LOGS_DIR]:
 # ─── 🧩 MODULE IMPORTS ──────────────────────────────────────────────────────────
 
 # 🌐 CLI entrypoint and configuration loader
-from .cli import evrmail_cli_app, evrmail_eel_app
+from .cli import evrmail_cli_app, evrmail_gui_app
 from .config import load_config, save_config
 
 # 🔌 Evrmore RPC and ZeroMQ clients
@@ -112,9 +112,9 @@ def main():
     """Launch the EvrMail CLI app."""
     evrmail_cli_app()
 
-def eel():
-    """ Launch Eel app """
-    evrmail_eel_app()
+def gui():
+    """Launch Qt-based GUI app."""
+    evrmail_gui_app()
 
 # 🧪 Allow `python -m evrmail` to work
 if __name__ == "__main__":

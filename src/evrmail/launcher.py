@@ -30,6 +30,7 @@ def parse_args():
     parser.add_argument('--debug', action='store_true', help='Enable debug logging')
     parser.add_argument('--no-gui', action='store_true', help='Run only the daemon, without GUI')
     parser.add_argument('--no-daemon', action='store_true', help='Run only the GUI, without daemon')
+    parser.add_argument('--nodejs', action='store_true', help='Run GUI in development mode with NodeJS')
     parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help='Set log level (overrides --debug)')
     return parser.parse_args()
@@ -83,7 +84,13 @@ def main():
             # Give the daemon a moment to initialize
             if daemon:
                 time.sleep(1)
-            start_gui()
+            
+            # Check if we should use nodejs mode
+            nodejs_mode = args.nodejs
+            log.info(f"Starting GUI with nodejs mode: {nodejs_mode}")
+            
+            # Start the GUI with the appropriate mode
+            start_gui(nodejs=nodejs_mode)
         except Exception as e:
             log.error(f"Failed to start GUI: {e}")
             sys.exit(1)

@@ -51,19 +51,31 @@ A secure, blockchain-native messaging system powered by asset channels and encry
 )
 
 # --- Sub CLI App (Gui mode)
-evrmail_eel_app = typer.Typer()
-@evrmail_eel_app.command(name="evrmail-eel", help="Start the GUI for evrmail using Eel")
-def start_evrmail_eel():
-    from evrmail.gui.gui import start_gui  # This will start the Eel GUI window
-    start_gui()
+evrmail_gui_app = typer.Typer()
+@evrmail_gui_app.command(name="evrmail-gui", help="Start the EvrMail Qt-based GUI")
+def start_evrmail_gui(
+    nodejs: bool = typer.Option(False, "--nodejs", help="Start in nodejs development mode")
+):
+    from evrmail.gui.gui import start_gui  # This will start the Qt-based GUI window
+    start_gui(nodejs=nodejs)
+
+# --- Dev GUI command
+@evrmail_cli_app.command(name="dev", help="Start EvrMail GUI in development mode")
+def dev_gui():
+    """Start the EvrMail GUI in development mode using nodejs"""
+    from evrmail.gui.gui import start_gui
+    start_gui(nodejs=True)
 
 # Default GUI command when no subcommand is specified
 @evrmail_cli_app.callback(invoke_without_command=True)
-def main_callback(ctx: typer.Context):
+def main_callback(
+    ctx: typer.Context,
+    nodejs: bool = typer.Option(False, "--nodejs", help="Start GUI in nodejs development mode")
+):
     if ctx.invoked_subcommand is None:
-        # If no subcommand is given, start the Eel GUI
+        # If no subcommand is given, start the GUI
         from evrmail.gui.gui import start_gui
-        start_gui()
+        start_gui(nodejs=nodejs)
 
 # 📦 Register subcommands
 evrmail_cli_app.add_typer(wallets_app)
@@ -80,6 +92,6 @@ evrmail_cli_app.add_typer(logs_app)
 def main():
     evrmail_cli_app()
 
-def eel():
-    evrmail_eel_app()
+def gui():
+    evrmail_gui_app()
     

@@ -1,14 +1,14 @@
 """
-📬 EvrMail Functions — Backend functions exposed to the Eel frontend
+📬 EvrMail Functions — Backend functions exposed to the UI frontend
 """
 
-import eel
 import json
 import time
 import logging
 import threading
 from pathlib import Path
 from datetime import datetime
+from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 
 # Core imports from the original Flet implementation
 from evrmail.wallet.utils import calculate_balances, load_all_wallet_keys
@@ -25,6 +25,526 @@ from evrmail.daemon import start_daemon_threaded
 from evrmail.config import load_config, save_config
 from evrmail.crypto import validate_evr_address
 from evrmail.daemon import EVRMailDaemon
+
+# QWebChannel wrapper class for all functions
+class WebUIBridge(QObject):
+    """Bridge class to expose functions to the web UI via QWebChannel"""
+    
+    def __init__(self):
+        super().__init__()
+        
+    @pyqtSlot(str)
+    def log(self, message):
+        """Log a message from JavaScript"""
+        print(f"[JS LOG]: {message}")
+        
+    @pyqtSlot(str, result=str)
+    def get_log_entries(self, params):
+        """Get log entries filtered by level, category, and text
+        params is a JSON string with level, categories, filter_text keys
+        """
+        try:
+            # Parse parameters
+            params_dict = json.loads(params) if params else {}
+            level = params_dict.get("level", "all")
+            categories = params_dict.get("categories", [])
+            filter_text = params_dict.get("filter_text", None)
+            
+            # Call the original function
+            logs = _get_log_entries_impl(level, categories, filter_text)
+            
+            # Convert to JSON string
+            return json.dumps(logs)
+        except Exception as e:
+            gui_log("error", f"Error in get_log_entries bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(result=str)
+    def get_settings(self):
+        """Get application settings"""
+        try:
+            settings = _get_settings_impl()
+            return json.dumps(settings)
+        except Exception as e:
+            gui_log("error", f"Error in get_settings bridge: {str(e)}")
+            return json.dumps({})
+    
+    @pyqtSlot(str, result=str)
+    def save_settings(self, settings_json):
+        """Save application settings"""
+        try:
+            settings = json.loads(settings_json)
+            result = _save_settings_impl(settings)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in save_settings bridge: {str(e)}")
+            return json.dumps({"success": False, "error": str(e)})
+            
+    @pyqtSlot(result=str)
+    def get_wallet_balances(self):
+        """Get wallet balances"""
+        try:
+            balances = _get_wallet_balances_impl()
+            return json.dumps(balances)
+        except Exception as e:
+            gui_log("error", f"Error in get_wallet_balances bridge: {str(e)}")
+            return json.dumps({
+                "total_evr": 0,
+                "evr": {},
+                "assets": {},
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_wallet_addresses(self):
+        """Get all wallet addresses"""
+        try:
+            addresses = _get_wallet_addresses_impl()
+            return json.dumps(addresses)
+        except Exception as e:
+            gui_log("error", f"Error in get_wallet_addresses bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(result=str)
+    def get_wallet_list(self):
+        """Get list of wallet names"""
+        try:
+            wallets = _get_wallet_list_impl()
+            return json.dumps(wallets)
+        except Exception as e:
+            gui_log("error", f"Error in get_wallet_list bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(result=str)
+    def get_utxos(self):
+        """Get UTXOs for the wallet"""
+        try:
+            utxos = _get_utxos_impl()
+            return json.dumps(utxos)
+        except Exception as e:
+            gui_log("error", f"Error in get_utxos bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(result=str)
+    def get_inbox_messages(self):
+        """Get inbox messages"""
+        try:
+            messages = _get_inbox_messages_impl()
+            return json.dumps(messages)
+        except Exception as e:
+            gui_log("error", f"Error in get_inbox_messages bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(result=str)
+    def get_sent_messages(self):
+        """Get sent messages"""
+        try:
+            messages = _get_sent_messages_impl()
+            return json.dumps(messages)
+        except Exception as e:
+            gui_log("error", f"Error in get_sent_messages bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(str, str, str, str, bool, result=str)
+    def send_message(self, recipient, subject, message, outbox="", dry_run=False):
+        """Send a message through EvrMail"""
+        try:
+            result = _send_message_impl(recipient, subject, message, outbox, dry_run)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in send_message bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, float, bool, result=str)
+    def send_evr(self, address, amount, dry_run=False):
+        """Send EVR to an address"""
+        try:
+            result = _send_evr_impl(address, amount, dry_run)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in send_evr bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, str, result=str)
+    def generate_receive_address(self, wallet_name="default", friendly_name=None):
+        """Generate a new receiving address"""
+        try:
+            result = _generate_receive_address_impl(wallet_name, friendly_name)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in generate_receive_address bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def navigate_browser(self, url):
+        """Navigate to a URL in the embedded browser"""
+        try:
+            result = _navigate_browser_impl(url)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in navigate_browser bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def check_daemon_status(self):
+        """Check if the daemon is running and ready"""
+        try:
+            result = _check_daemon_status_impl()
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in check_daemon_status bridge: {str(e)}")
+            return json.dumps({
+                "running": False,
+                "status": "error",
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def preload_app_data(self):
+        """Preload application data needed for startup"""
+        try:
+            result = _preload_app_data_impl()
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in preload_app_data bridge: {str(e)}")
+            return json.dumps({
+                "wallet_ready": False,
+                "message_count": 0,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_messages(self):
+        """Get all messages (both inbox and sent)"""
+        try:
+            messages = _get_messages_impl()
+            return json.dumps(messages)
+        except Exception as e:
+            gui_log("error", f"Error in get_messages bridge: {str(e)}")
+            return json.dumps([])
+            
+    @pyqtSlot(str, result=str)
+    def mark_message_read(self, message_id):
+        """Mark a message as read"""
+        try:
+            result = _mark_message_read_impl(message_id)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in mark_message_read bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def delete_message(self, message_id):
+        """Delete a message from inbox"""
+        try:
+            result = _delete_message_impl(message_id)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in delete_message bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_message_stats(self):
+        """Get message statistics"""
+        try:
+            result = _get_message_stats_impl()
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in get_message_stats bridge: {str(e)}")
+            return json.dumps({
+                "total": 0,
+                "inbox": 0,
+                "sent": 0,
+                "unread": 0,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_network_status(self):
+        """Get network connection status"""
+        try:
+            result = _get_network_status_impl()
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in get_network_status bridge: {str(e)}")
+            return json.dumps({
+                "connected": False,
+                "network": "unknown",
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_app_version(self):
+        """Get application version"""
+        try:
+            version = _get_app_version_impl()
+            return json.dumps(version)
+        except Exception as e:
+            gui_log("error", f"Error in get_app_version bridge: {str(e)}")
+            return json.dumps("unknown")
+            
+    @pyqtSlot(result=str)
+    def get_wallet_info(self):
+        """Get diagnostic information about the wallet data structure"""
+        try:
+            result = _get_wallet_info_impl()
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in get_wallet_info bridge: {str(e)}")
+            return json.dumps({
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def open_in_system_browser(self, url):
+        """Open a URL in the system's default browser"""
+        try:
+            result = _open_in_system_browser_impl(url)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in open_in_system_browser bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(result=str)
+    def get_contacts(self):
+        """Get list of contacts from config"""
+        try:
+            contacts = _get_contacts_impl()
+            return json.dumps(contacts)
+        except Exception as e:
+            gui_log("error", f"Error in get_contacts bridge: {str(e)}")
+            return json.dumps({})
+            
+    @pyqtSlot(result=str)
+    def get_contact_requests(self):
+        """Get list of pending contact requests"""
+        try:
+            requests = _get_contact_requests_impl()
+            return json.dumps(requests)
+        except Exception as e:
+            gui_log("error", f"Error in get_contact_requests bridge: {str(e)}")
+            return json.dumps({})
+            
+    @pyqtSlot(str, str, str, str, bool, result=str)
+    def send_contact_request(self, address, name=None, address_mode="random", from_address=None, dry_run=False):
+        """Send a contact request to another user"""
+        try:
+            result = _send_contact_request_impl(address, name, address_mode, from_address, dry_run)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in send_contact_request bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def remove_contact(self, address):
+        """Remove a contact"""
+        try:
+            result = _remove_contact_impl(address)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in remove_contact bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def accept_contact_request(self, address):
+        """Accept a contact request"""
+        try:
+            result = _accept_contact_request_impl(address)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in accept_contact_request bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, result=str)
+    def reject_contact_request(self, address):
+        """Reject a contact request"""
+        try:
+            result = _reject_contact_request_impl(address)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in reject_contact_request bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+
+# Implementation functions that the bridge class calls
+# These use the original code but are renamed to avoid conflicts
+
+def _get_log_entries_impl(level="all", categories=None, filter_text=None):
+    """Implementation of get_log_entries"""
+    # Use the original implementation
+    return get_log_entries(level, categories, filter_text)
+
+def _get_settings_impl():
+    """Implementation of get_settings"""
+    # Use the original implementation
+    return get_settings()
+
+def _save_settings_impl(settings):
+    """Implementation of save_settings"""
+    # Use the original implementation
+    return save_settings(settings)
+
+def _get_wallet_balances_impl():
+    """Implementation of get_wallet_balances"""
+    # Use the original implementation
+    return get_wallet_balances()
+
+def _get_wallet_addresses_impl():
+    """Implementation of get_wallet_addresses"""
+    # Use the original implementation
+    return get_wallet_addresses()
+
+def _get_wallet_list_impl():
+    """Implementation of get_wallet_list"""
+    # Use the original implementation
+    return get_wallet_list()
+
+def _get_utxos_impl():
+    """Implementation of get_utxos"""
+    # Use the original implementation
+    return get_utxos()
+
+def _get_inbox_messages_impl():
+    """Implementation of get_inbox_messages"""
+    # Use the original implementation
+    return get_inbox_messages()
+
+def _get_sent_messages_impl():
+    """Implementation of get_sent_messages"""
+    # Use the original implementation
+    return get_sent_messages()
+
+def _send_message_impl(recipient, subject, message, outbox="", dry_run=False):
+    """Implementation of send_message"""
+    # Use the original implementation
+    return send_message(recipient, subject, message, outbox, dry_run)
+
+def _send_evr_impl(address, amount, dry_run=False):
+    """Implementation of send_evr"""
+    # Use the original implementation
+    return send_evr(address, amount, dry_run)
+
+def _generate_receive_address_impl(wallet_name="default", friendly_name=None):
+    """Implementation of generate_receive_address"""
+    # Use the original implementation
+    return generate_receive_address(wallet_name, friendly_name)
+
+def _navigate_browser_impl(url):
+    """Implementation of navigate_browser"""
+    # Use the original implementation
+    return navigate_browser(url)
+
+def _check_daemon_status_impl():
+    """Implementation of check_daemon_status"""
+    # Use the original implementation
+    return check_daemon_status()
+
+def _preload_app_data_impl():
+    """Implementation of preload_app_data"""
+    # Use the original implementation
+    return preload_app_data()
+
+def _get_messages_impl():
+    """Implementation of get_messages"""
+    # Use the original implementation
+    return get_messages()
+
+def _mark_message_read_impl(message_id):
+    """Implementation of mark_message_read"""
+    # Use the original implementation
+    return mark_message_read(message_id)
+
+def _delete_message_impl(message_id):
+    """Implementation of delete_message"""
+    # Use the original implementation
+    return delete_message(message_id)
+
+def _get_message_stats_impl():
+    """Implementation of get_message_stats"""
+    # Use the original implementation
+    return get_message_stats()
+
+def _get_network_status_impl():
+    """Implementation of get_network_status"""
+    # Use the original implementation
+    return get_network_status()
+
+def _get_app_version_impl():
+    """Implementation of get_app_version"""
+    # Use the original implementation
+    return get_app_version()
+
+def _get_wallet_info_impl():
+    """Implementation of get_wallet_info"""
+    # Use the original implementation
+    return get_wallet_info()
+
+def _open_in_system_browser_impl(url):
+    """Implementation of open_in_system_browser"""
+    # Use the original implementation
+    return open_in_system_browser(url)
+
+def _get_contacts_impl():
+    """Implementation of get_contacts"""
+    # Use the original implementation
+    return get_contacts()
+
+def _get_contact_requests_impl():
+    """Implementation of get_contact_requests"""
+    # Use the original implementation
+    return get_contact_requests()
+
+def _send_contact_request_impl(address, name=None, address_mode="random", from_address=None, dry_run=False):
+    """Implementation of send_contact_request"""
+    # Use the original implementation
+    return send_contact_request(address, name, address_mode, from_address, dry_run)
+
+def _remove_contact_impl(address):
+    """Implementation of remove_contact"""
+    # Use the original implementation
+    return remove_contact(address)
+
+def _accept_contact_request_impl(address):
+    """Implementation of accept_contact_request"""
+    # Use the original implementation
+    return accept_contact_request(address)
+
+def _reject_contact_request_impl(address):
+    """Implementation of reject_contact_request"""
+    # Use the original implementation
+    return reject_contact_request(address)
 
 # Global objects
 _daemon_thread = None
@@ -102,7 +622,6 @@ def _start_daemon():
 # Start daemon on module import
 _start_daemon()
 
-@eel.expose
 def get_log_entries(level="all", categories=None, filter_text=None):
     """Get log entries filtered by level, category, and text"""
     try:
@@ -146,12 +665,10 @@ def get_log_entries(level="all", categories=None, filter_text=None):
         gui_log("error", traceback.format_exc())
         return []
 
-@eel.expose
 def get_settings():
     """Get application settings"""
     return _settings
 
-@eel.expose
 def save_settings(settings):
     """Save application settings"""
     global _settings
@@ -169,7 +686,7 @@ def save_settings(settings):
         gui_log("error", f"Failed to save settings: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def get_wallet_balances():
     """Get wallet balances"""
     try:
@@ -201,7 +718,7 @@ def get_wallet_balances():
             "error": str(e)
         }
 
-@eel.expose
+
 def get_wallet_addresses():
     """Get all wallet addresses in a format suitable for the frontend"""
     try:
@@ -246,7 +763,7 @@ def get_wallet_addresses():
         gui_log("error", traceback.format_exc())
         return []
 
-@eel.expose
+
 def get_wallet_list():
     """Get list of wallet names"""
     try:
@@ -256,7 +773,7 @@ def get_wallet_list():
         gui_log("error", f"Error getting wallet list: {str(e)}")
         return []
 
-@eel.expose
+
 def get_utxos():
     """Get UTXOs for the wallet"""
     try:
@@ -310,7 +827,7 @@ def get_utxos():
         gui_log("error", f"Error getting UTXOs: {str(e)}")
         return []
 
-@eel.expose
+
 def get_inbox_messages():
     """Get inbox messages"""
     try:
@@ -339,7 +856,7 @@ def get_inbox_messages():
         gui_log("error", f"Error loading inbox messages: {str(e)}")
         return []
 
-@eel.expose
+
 def get_sent_messages():
     """Get sent messages"""
     try:
@@ -367,7 +884,7 @@ def get_sent_messages():
         gui_log("error", f"Error loading sent messages: {str(e)}")
         return []
 
-@eel.expose
+
 def send_message(recipient, subject, message, outbox="", dry_run=False):
     """Send a message through EvrMail"""
     try:
@@ -421,7 +938,7 @@ def send_message(recipient, subject, message, outbox="", dry_run=False):
             "error": str(e)
         }
 
-@eel.expose
+
 def send_evr(address, amount, dry_run=False):
     """Send EVR to an address"""
     try:
@@ -456,7 +973,7 @@ def send_evr(address, amount, dry_run=False):
             "error": str(e)
         }
 
-@eel.expose
+
 def generate_receive_address(wallet_name="default", friendly_name=None):
     """Generate a new receiving address"""
     try:
@@ -479,7 +996,7 @@ def generate_receive_address(wallet_name="default", friendly_name=None):
             "error": str(e)
         }
 
-@eel.expose
+
 def navigate_browser(url):
     """Navigate to a URL in the embedded browser
     
@@ -790,7 +1307,7 @@ def navigate_browser(url):
             "error": f"Failed to load URL: {str(e)}"
         }
 
-@eel.expose
+
 def check_daemon_status():
     """Check if the daemon is running and ready"""
     # Use the logs to determine if the daemon is running properly
@@ -828,7 +1345,7 @@ def check_daemon_status():
     
     return {"running": False, "status": "not_running"}
 
-@eel.expose
+
 def preload_app_data():
     """Preload application data needed for startup"""
     result = {
@@ -855,7 +1372,7 @@ def preload_app_data():
     
     return result
 
-@eel.expose
+
 def get_messages():
     """Get all messages (both inbox and sent)"""
     try:
@@ -894,7 +1411,7 @@ def get_messages():
         gui_log("error", f"Error loading messages: {str(e)}")
         return []
 
-@eel.expose
+
 def mark_message_read(message_id):
     """Mark a message as read"""
     try:
@@ -922,7 +1439,7 @@ def mark_message_read(message_id):
         gui_log("error", f"Error marking message as read: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def delete_message(message_id):
     """Delete a message from inbox"""
     try:
@@ -946,7 +1463,7 @@ def delete_message(message_id):
         gui_log("error", f"Error deleting message: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def get_message_stats():
     """Get message statistics"""
     try:
@@ -981,7 +1498,7 @@ def get_message_stats():
             "unread": 0
         }
 
-@eel.expose
+
 def get_network_status():
     """Get network connection status"""
     try:
@@ -1039,13 +1556,13 @@ def get_network_status():
             "height": 0
         }
 
-@eel.expose
+
 def get_app_version():
     """Get application version"""
     from evrmail import __version__
     return __version__
 
-@eel.expose
+
 def get_wallet_info():
     """Get diagnostic information about the wallet data structure"""
     try:
@@ -1121,7 +1638,7 @@ def get_wallet_info():
         gui_log("error", traceback.format_exc())
         return {"error": str(e), "traceback": traceback.format_exc()}
 
-@eel.expose
+
 def open_in_system_browser(url):
     """Open a URL in the system's default browser"""
     try:
@@ -1142,7 +1659,7 @@ def open_in_system_browser(url):
         gui_log("error", f"Error opening URL in system browser: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def get_contacts():
     """Get list of contacts from config."""
     try:
@@ -1154,7 +1671,7 @@ def get_contacts():
         gui_log("error", f"Error getting contacts: {str(e)}")
         return {}
 
-@eel.expose
+
 def get_contact_requests():
     """Get list of pending contact requests."""
     try:
@@ -1166,7 +1683,7 @@ def get_contact_requests():
         gui_log("error", f"Error getting contact requests: {str(e)}")
         return {}
 
-@eel.expose
+
 def send_contact_request(address: str, name: str = None, address_mode: str = "random", from_address: str = None, dry_run: bool = False):
     """Send a contact request to another user, with address selection mode."""
     try:
@@ -1233,7 +1750,7 @@ def send_contact_request(address: str, name: str = None, address_mode: str = "ra
         gui_log("error", traceback.format_exc())
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def remove_contact(address: str):
     """Remove a contact."""
     try:
@@ -1252,7 +1769,7 @@ def remove_contact(address: str):
         gui_log("error", f"Error removing contact: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def accept_contact_request(address: str):
     """Accept a contact request."""
     try:
@@ -1282,7 +1799,7 @@ def accept_contact_request(address: str):
         gui_log("error", f"Error accepting contact request: {str(e)}")
         return {"success": False, "error": str(e)}
 
-@eel.expose
+
 def reject_contact_request(address: str):
     """Reject a contact request."""
     try:
@@ -1307,7 +1824,7 @@ def reject_contact_request(address: str):
 
 def expose_all_functions():
     """Register all functions to be exposed to JavaScript"""
-    # All functions with @eel.expose are automatically exposed
+    # All functions with  are automatically exposed
     # This function exists to ensure the module is imported and decorators are registered
     pass 
 

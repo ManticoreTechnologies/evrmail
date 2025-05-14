@@ -1,0 +1,120 @@
+/* Reset default styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Main application styling */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #121212;
+  color: #fff;
+  font-family: sans-serif;
+}
+
+.tabs {
+  display: flex;
+  background-color: #1a2530;
+  border-bottom: 1px solid #34495e;
+}
+
+.tab {
+  padding: 15px 25px;
+  color: #ecf0f1;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.2s;
+}
+
+.tab:hover {
+  background-color: #34495e;
+}
+
+.tab.active {
+  background-color: #2c3e50;
+  border-bottom: 3px solid #3498db;
+  font-weight: 500;
+}
+
+/* Loading screen */
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #1a2530;
+  color: #ecf0f1;
+}
+
+.loading-message {
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.loading-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.loading-message h1 {
+  font-size: 28px;
+  margin: 0 0 12px 0;
+}
+
+.loading-message p {
+  font-size: 16px;
+  opacity: 0.7;
+}
+
+/* Error message styling */
+.error-message {
+  text-align: center;
+  animation: fadeIn 0.5s ease-in-out;
+  background-color: rgba(231, 76, 60, 0.1);
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  margin: 20px;
+}
+
+.error-icon {
+  font-size: 60px;
+  margin-bottom: 20px;
+}
+
+.error-message h1 {
+  font-size: 28px;
+  margin: 0 0 12px 0;
+  color: #e74c3c;
+}
+
+.error-message p {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.error-message button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.error-message button:hover {
+  background-color: #2980b9;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+} 

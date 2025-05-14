@@ -1,52 +1,63 @@
 """
-📬 EvrMail GUI — Eel-based interface for EvrMail
+📬 EvrMail GUI — UI interface for EvrMail
 """
 
-import eel
 import sys
 import os
 import threading
 from pathlib import Path
 import logging
-import time
 from evrmail.utils import gui as gui_log, configure_logging
 from evrmail.wallet.utils import calculate_balances, load_all_wallet_keys
 from evrmail.wallet.addresses import get_all_addresses
+from evrmail.gui.start_gui import main as start_qt_gui
 
-def start_gui():
-    """Launch the EvrMail application using Eel"""
+def start_gui(nodejs=False):
+    """
+    Launch the EvrMail application using the Qt-based interface
+    
+    This function replaces the old Eel-based interface with the new Qt WebEngine + QWebChannel setup
+    
+    Args:
+        nodejs: Whether to use nodejs development server
+    """
     try:
         # Configure logging
         configure_logging(level=logging.INFO)
-        gui_log("info", "Starting EvrMail GUI with Eel interface")
+        gui_log("info", "Starting EvrMail GUI with Qt WebEngine interface")
         
         # Set web folder location (relative to this file)
-        web_folder = Path(__file__).parent / "web"
+        web_folder = Path(__file__).parent.parent / "webui" / "dist"
         if not web_folder.exists():
             gui_log("error", f"Web folder not found at {web_folder}")
             raise FileNotFoundError(f"Web folder not found at {web_folder}")
         
         gui_log("info", f"Using web folder: {web_folder}")
         
-        # Initialize Eel with the web folder
-        eel.init(str(web_folder))
-        
-        # Expose Python functions to JavaScript
-        from .functions import expose_all_functions
-        expose_all_functions()
-        gui_log("info", "Exposed Python functions to JavaScript")
-        
         # Pre-load some data that might be needed at startup
         threading.Thread(target=_preload_data, daemon=True).start()
         
-        # Start the Eel app
-        gui_log("info", "Starting Eel application...")
-        eel.start('index.html', 
-                  size=(1080, 720), 
-                  port=0,  # Use any available port
-                  cmdline_args=['--disable-features=TranslateUI', '--disable-translation', '--no-cache'],
-                  app_mode=True)
-        gui_log("info", "Eel application started")
+        # Start the Qt-based GUI application
+        gui_log("info", "Starting Qt WebEngine application...")
+        
+        # Get the path to the main HTML file
+        html_path = web_folder / "index.html"
+        
+        # Check if we should use nodejs mode for development
+        gui_log("info", f"NodeJS mode: {nodejs}")
+        
+        # Pass the --nodejs flag to sys.argv if needed
+        if nodejs and "--nodejs" not in sys.argv:
+            sys.argv.append("--nodejs")
+        
+        # Start the Qt application with appropriate options
+        start_qt_gui(
+            path=str(html_path.absolute()),
+            nodejs=nodejs,
+            argv=sys.argv
+        )
+        
+        gui_log("info", "Qt WebEngine application started")
     except SystemExit:
         # Normal exit
         gui_log("info", "EvrMail GUI shutting down normally")
@@ -55,9 +66,9 @@ def start_gui():
         # Ctrl+C exit
         gui_log("info", "Keyboard interrupt detected, exiting...")
     except Exception as e:
-        # If there's an error starting the Eel app, try to open in fallback mode
+        # If there's an error starting the app, try to open in fallback mode
         import traceback
-        error_msg = f"Error starting Eel app: {str(e)}"
+        error_msg = f"Error starting Qt WebEngine app: {str(e)}"
         gui_log("error", error_msg)
         traceback.print_exc()
         
