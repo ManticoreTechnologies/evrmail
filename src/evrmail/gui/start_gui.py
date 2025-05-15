@@ -123,7 +123,8 @@ class MainWindow(QMainWindow):
                 webui_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "webui")
                 os.system(f"gnome-terminal -- bash -c 'cd {webui_path} && npm run dev'")
                 print(f"Started nodejs dev server from {webui_path}")
-            
+            import time 
+            time.sleep(1)
             # Use nodejs dev server
             html_path = "http://localhost:5173"
             self.ui_view.setUrl(QUrl(html_path))
