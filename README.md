@@ -35,7 +35,7 @@ EvrMail is a revolutionary email system that bridges the gap between blockchain 
 
 🔄 **In Progress (v0.2.0 - Q3 2025)**:
 - Message broadcasting to multiple recipients
-- Improved UI/UX with Flet framework
+- Improved UI/UX with PyQt5 and React/TypeScript
 - Performance optimizations for large mailboxes
 - Enhanced message threading and conversation view
 - Attachment support for documents and images
@@ -72,7 +72,7 @@ EvrMail is a revolutionary email system that bridges the gap between blockchain 
 EvrMail uses a clean, modular architecture:
 
 - **Core**: Blockchain interaction, cryptography, and messaging protocol
-- **GUI**: Modern interface using Flutter/Flet for cross-platform support
+- **GUI**: Modern interface using PyQt5 with QWebEngineView and React/TypeScript
 - **Daemon**: Background services for message syncing and notification
 - **Storage**: IPFS integration for decentralized content storage
 
@@ -146,7 +146,7 @@ evrmail --help
 - **Cryptography**: secp256k1, ECDH, AES-GCM, HKDF
 - **Blockchain**: Evrmore RPC, ZeroMQ for event monitoring
 - **Storage**: IPFS for decentralized content storage
-- **Frontend**: Flet (Flutter) for modern, responsive UI
+- **Frontend**: PyQt5 with QWebEngineView and React/TypeScript
 - **Backend**: Python for business logic and blockchain interaction
 
 ## 📦 CLI Commands
