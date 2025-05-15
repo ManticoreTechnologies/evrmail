@@ -1,131 +1,157 @@
-# EvrMail
+# 📬 EvrMail
 
-A secure, blockchain-native email application built on the Evrmore blockchain.
+A secure, blockchain-native email system built on the Evrmore blockchain, providing encrypted, decentralized communication.
 
-## 🔄 UI Framework Migration
+## 📋 What is EvrMail?
 
-This project was migrated from PySide6 (Qt) to Flet (Flutter) for its UI framework. The reasons for this migration include:
+EvrMail is a revolutionary email system that bridges the gap between blockchain and traditional email. Unlike conventional email services that rely on centralized servers, EvrMail leverages the Evrmore blockchain and IPFS to create a decentralized, secure, and censorship-resistant communication platform.
 
-- Smaller dependency footprint (Flet is much lighter than PySide6)
-- Better cross-platform support (desktop and web)
-- Modern UI components and Material Design
-- Simpler reactive programming model
+### How It Works in Simple Terms
 
-## 📦 Installation
+- **Decentralized Storage**: Messages are stored on IPFS (InterPlanetary File System), not on corporate servers
+- **Blockchain for Notifications**: The Evrmore blockchain is used to broadcast notifications about new messages, not to store the content itself
+- **Asset-Based Outboxes**: EvrMail uses Evrmore blockchain assets as "outboxes" - own the asset, control who can send from it
+- **Address-Based Inboxes**: Your Evrmore addresses function as inboxes for receiving messages
+- **Bridge to Traditional Email**: Through evrmail.com, blockchain emails can be sent to and received from regular email addresses (gmail, outlook, etc.)
+- **Self-Sovereign Identity**: You own your identity and communications - no account to create, no password to remember, just your blockchain keys
+- **No Central Server Required**: The combination of blockchain and IPFS eliminates the need for centralized servers
+- **Seamless Multi-Wallet Support**: Use multiple wallets simultaneously or import existing ones with just a few clicks - the most user-friendly wallet management in the Evrmore ecosystem
+- **Built-in Spam Protection**: Communication requires public key exchange first - no more unsolicited messages from unknown senders
 
-1. Clone the repository
-2. Install dependencies:
+### Current Status & Roadmap
 
-```bash
-pip install -r requirements.txt
-```
+✅ **Completed (v0.1.0)**:
+- Core protocol implementation
+- End-to-end encryption with secp256k1 ECDH + AES-GCM
+- Asset-based outboxes and address-based inboxes
+- Basic sending & receiving functionality
+- Multi-wallet management system
+- Contact book with public key exchange
+- Local IPFS integration for message storage
 
-## 🚀 Running the Application
+🔄 **In Progress (v0.2.0 - Q3 2025)**:
+- Message broadcasting to multiple recipients
+- Improved UI/UX with Flet framework
+- Performance optimizations for large mailboxes
+- Enhanced message threading and conversation view
+- Attachment support for documents and images
 
-```bash
-python -m evrmail
-```
+🚧 **Coming Soon (v0.3.0 - Q4 2025)**:
+- Clearnet email bridging through evrmail.com
+- Gateway for sending/receiving from traditional email services
+- Message forwarding service for offline recipients
+- Mobile applications (iOS and Android)
 
-## 🧩 Main Components
+🔮 **Future Roadmap (v1.0 and beyond)**:
+- Email-to-asset swaps & trading platform
+- Public email groups & forums
+- DAO governance for public channels
+- Browser extension for web integration
+- Advanced filtering and search capabilities
+- Integration with other blockchain messaging systems
 
-- **Inbox Panel**: View and manage received messages
-- **Compose Panel**: Create and send new messages
-- **Wallet Panel**: Manage EVR and asset balances
-- **Browser Panel**: Browse Evrmore blockchain domains
-- **Settings Panel**: Configure application settings
-- **Log Panel**: View application logs
+## 🔒 Key Features
+
+- **Blockchain-native Messaging**: Uses Evrmore assets as outboxes and addresses as inboxes
+- **End-to-End Encryption**: Messages are encrypted with secp256k1 ECDH + AES-GCM
+- **Decentralized Storage**: IPFS integration for message storage and retrieval
+- **Self-sovereign Identity**: Own your identity through blockchain asset ownership
+- **Multi-wallet Support**: Create, import, and manage multiple wallet identities with ease
+- **Modern UI**: Intuitive interface with support for desktop and web
+- **Spam-Free Communication**: Exchange public keys before messaging - ensuring only wanted communications
 
 ## 🏗️ Architecture
 
-EvrMail uses a clean architecture with:
+EvrMail uses a clean, modular architecture:
 
-- **GUI Layer**: Flet UI components in `src/evrmail/gui/`
-- **Business Logic**: Core messaging and blockchain logic
-- **Data Layer**: Blockchain interaction, local storage, and IPFS
+- **Core**: Blockchain interaction, cryptography, and messaging protocol
+- **GUI**: Modern interface using Flutter/Flet for cross-platform support
+- **Daemon**: Background services for message syncing and notification
+- **Storage**: IPFS integration for decentralized content storage
 
-## 📚 Dependencies
+## 🚀 Quick Start
 
-- Flet: UI framework
-- PyCryptodome: Cryptographic operations
-- base58: Base58 encoding/decoding
-- PyYAML: Configuration files
-- requests: HTTP client
-- python-dotenv: Environment management
+### Installation
+
+```bash
+# Create virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
+
+# Install EvrMail
+pip install evrmail
+```
+
+### Setup
+
+```bash
+# Create a wallet
+evrmail wallets create
+
+# Create an address for receiving messages
+evrmail receive MyInbox
+
+# Get your public key to share with contacts
+evrmail addresses get MyInbox
+
+# Add a contact
+evrmail contacts add <ADDRESS> <PUBKEY> --friendly-name "Alice"
+```
+
+### Usage
+
+```bash
+# Start the GUI application
+evrmail
+
+# Or use CLI commands:
+evrmail inbox list
+evrmail compose
+```
+
+## 💡 How It Works
+
+1. **Identity**: Each user controls a unique channel asset on the Evrmore blockchain
+2. **Sending**: Messages are encrypted with the recipient's public key and stored on IPFS
+3. **Notification**: A small blockchain transaction notifies the recipient of a new message
+4. **Retrieval**: Recipients decrypt messages using their private keys
+
+## 📚 Technical Stack
+
+- **Cryptography**: secp256k1, ECDH, AES-GCM, HKDF
+- **Blockchain**: Evrmore RPC, ZeroMQ for event monitoring
+- **Storage**: IPFS for decentralized content storage
+- **Frontend**: Flet (Flutter) for modern, responsive UI
+- **Backend**: Python for business logic and blockchain interaction
+
+## 📦 CLI Commands
+
+```
+evrmail --help                # Show all commands
+evrmail wallets <subcommand>  # Manage wallets
+evrmail addresses <subcommand> # Manage addresses
+evrmail contacts <subcommand> # Manage contacts
+evrmail compose               # Create a new message
+evrmail inbox list            # List received messages
+evrmail inbox open            # Open the inbox in GUI
+evrmail daemon start/stop     # Control the background service
+evrmail ipfs start/stop       # Control IPFS node
+```
+
+## 🔄 Development
+
+```bash
+# Clone the repository
+git clone https://github.com/ManticoreTech/evrmail.git
+cd evrmail
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run in development mode
+python -m evrmail dev
+```
 
 ## 📝 License
 
 © 2025 Manticore Technologies, LLC
-
-evrmail --help
-
-evrmail outbox set <owned_asset>
-
-evrmail outbox get
-
-evrmail inbox open
-
-evrmail inbox list
-
-evrmail inbox unread
-
-evrmail compose
-
-evrmail daemon start
-
-evrmail daemon stop
-
-evrmail ipfs install
-
-evrmail ipfs uninstall
-
-evrmail ipfs start 
-
-evrmail ipfs stop
-
-
-Evrmail has multi-wallet support, wallets are stored in ~/.evrmail/wallets/
-Create, Remove, Update, and Delete wallets using `evrmail wallets` subcommands
-
-More info coming soon!
-
-
-
-## Quick Setup!
-`python3 -m venv .venv`
-`source .venv/bin/activate`
-`pip install evrmail`
-`evrmail --help`
-
-
-## Quick Start!
-Create a wallet 
-`evrmail wallets create`
-Create an address
-`evrmail receive MyInbox`
-Get address data (Pubkey for contact exchange)
-`evrmail addresses get MyInbox`
-Copy your public key from the output and give it to your contacts.
-`xoznir@xoznir:~/Documents/Manticore_Technologies/Python/evmail-dev$ evrmail addresses get MyInbox
-
-📬 Address Info:
-
-  🏷️  Friendly Name : MyInbox
-  🔢 Index         : 1002
-  🧭 Path          : m/44'/175'/0'/0/1002
-  📬 Address       : EKinLJrSEUBpurTJkNo4XKnhK5X31g1Ag2
-  🔓 Public Key    : 020e16bd4607693bdca2f18cce2d1a62d01b17156878f352c63ca7aede455858ae
-  📦 Wallet        : wallet_fit_gospel_7545`
-
-`evrmail contacts add EX3T4XZvp7SrjuKonp7daKCtQFCDpSoP64 035c5898fe7d9972ed602c04487e21c4a0574f4d9bcf653c0b425ce0b367fbf5aa --friendly-name "myfriend"`
-
-
-Developer Notes:
-
-
-6. Making sure flet works:
-
-/home/xoznir/.flet/bin/flet-0.27.6/flet/flet: error while loading shared libraries: libmpv.so.1: cannot open shared object file: No such file or directory
-
-Install this package:
-
-sudo apt-get update && sudo apt-get install -y libmpv-dev mpv
