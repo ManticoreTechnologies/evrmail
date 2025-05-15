@@ -5,4 +5,3 @@ build/
 *.log
 *.pid
 *.egg-info
-node_modules/
