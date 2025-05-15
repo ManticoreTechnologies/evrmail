@@ -153,15 +153,49 @@ evrmail compose
 ## 📦 CLI Commands
 
 ```
-evrmail --help                # Show all commands
-evrmail wallets <subcommand>  # Manage wallets
-evrmail addresses <subcommand> # Manage addresses
-evrmail contacts <subcommand> # Manage contacts
-evrmail compose               # Create a new message
-evrmail inbox list            # List received messages
-evrmail inbox open            # Open the inbox in GUI
-evrmail daemon start/stop     # Control the background service
-evrmail ipfs start/stop       # Control IPFS node
+evrmail                       # Start the GUI application
+evrmail --nodejs              # Start GUI in nodejs development mode
+evrmail --help                # Show all commands and options
+
+# Wallet Management
+evrmail wallets               # 💼 Manage your Evrmore wallets
+evrmail wallets create        # Create a new wallet
+evrmail wallets list          # List existing wallets
+evrmail wallets import        # Import an existing wallet
+
+# Address Management
+evrmail addresses             # 🏷️ Manage addresses and keys
+evrmail addresses create      # Create a new address
+evrmail addresses list        # List your addresses
+evrmail addresses get         # Get details for an address
+
+# Balance & Transactions
+evrmail balance               # 💳 Show EVR or asset balances
+evrmail send                  # 🚀 Send EVR, assets, or metadata messages
+
+# Contacts Management
+evrmail contacts              # Manage your EvrMail contacts and contact requests
+evrmail contacts add          # Add a new contact
+evrmail contacts list         # List your contacts
+evrmail contacts remove       # Remove a contact
+
+# Messaging
+evrmail receive               # 📥 Receive messages
+
+# IPFS Management
+evrmail ipfs                  # Manage IPFS install and operation
+evrmail ipfs install          # Install IPFS
+evrmail ipfs start            # Start IPFS daemon
+evrmail ipfs stop             # Stop IPFS daemon
+
+# Development & Debugging
+evrmail dev                   # 🔧 Developer tools
+evrmail logs                  # Access and filter EvrMail logs
+```
+
+For detailed help on any command, use:
+```
+evrmail [COMMAND] --help
 ```
 
 ## 🔄 Development
