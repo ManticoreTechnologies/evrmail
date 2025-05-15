@@ -2,6 +2,9 @@
 
 A secure, blockchain-native email system built on the Evrmore blockchain, providing encrypted, decentralized communication.
 
+> **⚠️ IMPORTANT: Work In Progress ⚠️**  
+> EvrMail is currently under active development and **not yet ready for production use**. Features may be incomplete, contain bugs, or change significantly before release. Use at your own risk and only on test environments.
+
 ## 📋 What is EvrMail?
 
 EvrMail is a revolutionary email system that bridges the gap between blockchain and traditional email. Unlike conventional email services that rely on centralized servers, EvrMail leverages the Evrmore blockchain and IPFS to create a decentralized, secure, and censorship-resistant communication platform.
@@ -13,6 +16,7 @@ EvrMail is a revolutionary email system that bridges the gap between blockchain 
 - **Asset-Based Outboxes**: EvrMail uses Evrmore blockchain assets as "outboxes" - own the asset, control who can send from it
 - **Address-Based Inboxes**: Your Evrmore addresses function as inboxes for receiving messages
 - **Bridge to Traditional Email**: Through evrmail.com, blockchain emails can be sent to and received from regular email addresses (gmail, outlook, etc.)
+- **Integrated Blockchain Browser**: Browse .evr domains directly through the built-in browser that resolves domain names using IPFS data stored in Evrmore assets and ESL payloads
 - **Self-Sovereign Identity**: You own your identity and communications - no account to create, no password to remember, just your blockchain keys
 - **No Central Server Required**: The combination of blockchain and IPFS eliminates the need for centralized servers
 - **Seamless Multi-Wallet Support**: Use multiple wallets simultaneously or import existing ones with just a few clicks - the most user-friendly wallet management in the Evrmore ecosystem
@@ -35,12 +39,14 @@ EvrMail is a revolutionary email system that bridges the gap between blockchain 
 - Performance optimizations for large mailboxes
 - Enhanced message threading and conversation view
 - Attachment support for documents and images
+- Testnet support for development and testing
 
 🚧 **Coming Soon (v0.3.0 - Q4 2025)**:
 - Clearnet email bridging through evrmail.com
 - Gateway for sending/receiving from traditional email services
 - Message forwarding service for offline recipients
 - Mobile applications (iOS and Android)
+- Mainnet deployment with security audits
 
 🔮 **Future Roadmap (v1.0 and beyond)**:
 - Email-to-asset swaps & trading platform
@@ -58,6 +64,7 @@ EvrMail is a revolutionary email system that bridges the gap between blockchain 
 - **Self-sovereign Identity**: Own your identity through blockchain asset ownership
 - **Multi-wallet Support**: Create, import, and manage multiple wallet identities with ease
 - **Modern UI**: Intuitive interface with support for desktop and web
+- **Decentralized Web Browser**: Built-in browser with .evr domain resolution via Evrmore assets and ESL payloads
 - **Spam-Free Communication**: Exchange public keys before messaging - ensuring only wanted communications
 
 ## 🏗️ Architecture
@@ -82,9 +89,24 @@ source .venv/bin/activate
 pip install evrmail
 ```
 
+### Prerequisites
+
+1. **IPFS Node**: EvrMail requires IPFS for message storage. On first run, EvrMail will offer to install and configure IPFS for you automatically.
+
+2. **Evrmore Wallet**: You'll need an Evrmore wallet with some EVR for transaction fees.
+
+3. **Evrmore Asset**: To send messages, you need to own an Evrmore asset that will function as your outbox.
+
 ### Setup
 
 ```bash
+# Start EvrMail - it will help you set up IPFS if needed
+evrmail
+
+# Or manually install IPFS if you prefer
+evrmail ipfs install
+evrmail ipfs start
+
 # Create a wallet
 evrmail wallets create
 
@@ -96,6 +118,9 @@ evrmail addresses get MyInbox
 
 # Add a contact
 evrmail contacts add <ADDRESS> <PUBKEY> --friendly-name "Alice"
+
+# Set an asset as your outbox (you must own this asset)
+evrmail outbox set <YOUR_ASSET_NAME>
 ```
 
 ### Usage
@@ -115,6 +140,7 @@ evrmail compose
 2. **Sending**: Messages are encrypted with the recipient's public key and stored on IPFS
 3. **Notification**: A small blockchain transaction notifies the recipient of a new message
 4. **Retrieval**: Recipients decrypt messages using their private keys
+5. **Decentralized Web**: The integrated browser resolves .evr domains by looking up the associated asset data on the blockchain and routing through IPFS content identified in ESL payloads
 
 ## 📚 Technical Stack
 
