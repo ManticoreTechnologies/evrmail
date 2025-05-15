@@ -130,8 +130,7 @@ evrmail outbox set <YOUR_ASSET_NAME>
 evrmail
 
 # Or use CLI commands:
-evrmail inbox list
-evrmail compose
+evrmail --help
 ```
 
 ## 💡 How It Works
