@@ -152,6 +152,12 @@ pip install -r requirements.txt
 python -m evrmail dev
 ```
 
+*Manticore Technologies® is a registered trademark.*
+
 ## 📝 License
 
-© 2025 Manticore Technologies, LLC
+© 2025 Manticore Technologies, LLC®
+
+---
+
+EvrMail is a product of Manticore Technologies®, LLC. All rights reserved.
