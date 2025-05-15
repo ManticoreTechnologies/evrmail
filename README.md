@@ -156,8 +156,8 @@ python -m evrmail dev
 
 ## 📝 License
 
-© 2025 Manticore Technologies, LLC®
+© 2025 Manticore Technologies®
 
 ---
 
-EvrMail is a product of Manticore Technologies®, LLC. All rights reserved.
+EvrMail is a product of Manticore Technologies®. All rights reserved.
