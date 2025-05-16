@@ -121,11 +121,11 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleGoClick();
-    }
-  };
+  // const handleKeyPress = (e: React.KeyboardEvent) => {
+  //   if (e.key === 'Enter') {
+  //     handleGoClick();
+  //   }
+  // };
 
   return (
     <div className="browser-container">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import './EvrMail.css';
 import { getNetworkStatus, getMessages, getFromBackend, callBackend } from '../utils/bridge';
+import Dashboard from './Dashboard';
 
 interface EvrMailProps {
   backend: Backend | null;
@@ -421,18 +422,19 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
   
   // Render the actual content based on the active view
   const renderContent = () => {
+    if (loading) {
+      return <div className="loading">Loading...</div>;
+    }
+
+    if (error) {
+      return <div className="error-message">{error}</div>;
+    }
+
     switch (activeView) {
+      case 'dashboard':
+        return <Dashboard backend={backend} />;
       case 'inbox':
-        return (
-          <div className="inbox-view">
-            <div className="inbox-sidebar">
-              {renderMessageList()}
-            </div>
-            <div className="inbox-content">
-              {renderMessageDetail()}
-            </div>
-          </div>
-        );
+        return renderMessageList();
       case 'compose':
         return renderComposeForm();
       case 'contacts':
@@ -440,63 +442,7 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
       case 'wallet':
         return renderWallet();
       default:
-        return (
-          <div className="dashboard">
-            <p>Welcome to EvrMail - Your secure messaging application on the Evrmore blockchain.</p>
-            <p>Select an option from the menu to get started.</p>
-            
-            <div className="mail-stats">
-              <div className="stat-box">
-                <h3>Inbox</h3>
-                <div className="stat-count">{messages?.length || 0}</div>
-                <div className="stat-label">messages</div>
-              </div>
-              
-              <div className="stat-box">
-                <h3>Contacts</h3>
-                <div className="stat-count">{contacts?.length || 0}</div>
-                <div className="stat-label">contacts</div>
-              </div>
-              
-              <div className="stat-box">
-                <h3>Balance</h3>
-                <div className="stat-count">{walletBalance?.total_evr || 0}</div>
-                <div className="stat-label">EVR</div>
-              </div>
-            </div>
-            
-            <div className="action-buttons">
-              <button 
-                className="action-button"
-                onClick={() => setActiveView('inbox')}  
-              >
-                <span className="icon">📥</span>
-                Inbox
-              </button>
-              <button 
-                className="action-button"
-                onClick={() => setActiveView('compose')}
-              >
-                <span className="icon">✉️</span>
-                Compose
-              </button>
-              <button 
-                className="action-button"
-                onClick={() => setActiveView('contacts')}
-              >
-                <span className="icon">👤</span>
-                Contacts
-              </button>
-              <button 
-                className="action-button"
-                onClick={() => setActiveView('wallet')}
-              >
-                <span className="icon">💼</span>
-                Wallet
-              </button>
-            </div>
-          </div>
-        );
+        return <Dashboard backend={backend} />;
     }
   };
 
@@ -552,17 +498,7 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
         </div>
       </div>
       <div className="evrmail-content">
-        {error && (
-          <div className="error-message">
-            <p>{error}</p>
-            <button onClick={() => setError(null)}>Dismiss</button>
-          </div>
-        )}
-        {loading ? (
-          <div className="loading">Loading EvrMail...</div>
-        ) : (
-          renderContent()
-        )}
+        {renderContent()}
       </div>
     </div>
   );
