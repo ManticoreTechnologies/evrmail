@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import './EvrMail.css';
 import { getNetworkStatus, getMessages, getFromBackend, callBackend } from '../utils/bridge';
 import Dashboard from './Dashboard';
+import Inbox from './inbox/Inbox';
+import type { Message } from '../types/message';
 
 interface EvrMailProps {
   backend: Backend | null;
@@ -11,14 +13,14 @@ interface EvrMailProps {
 type EvrMailView = 'dashboard' | 'inbox' | 'compose' | 'contacts' | 'wallet';
 
 // Message interface
-interface Message {
-  id: string;
-  sender: string;
-  timestamp: number;
-  subject: string;
-  content: string;
-  read: boolean;
-}
+// interface Message {
+//   id: string;
+//   sender: string;
+//   timestamp: number;
+//   subject: string;
+//   content: string;
+//   read: boolean;
+// }
 
 // Contact interface
 interface Contact {
@@ -434,7 +436,7 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
       case 'dashboard':
         return <Dashboard backend={backend} />;
       case 'inbox':
-        return renderMessageList();
+        return <Inbox backend={backend} />;
       case 'compose':
         return renderComposeForm();
       case 'contacts':
