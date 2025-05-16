@@ -3,6 +3,8 @@ import './EvrMail.css';
 import { getNetworkStatus, getMessages, getFromBackend, callBackend } from '../utils/bridge';
 import Dashboard from './Dashboard';
 import Inbox from './inbox/Inbox';
+import ComposeMessage from './compose/ComposeMessage';
+import ErrorBoundary from './ErrorBoundary';
 import type { Message } from '../types/message';
 
 interface EvrMailProps {
@@ -363,65 +365,6 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
     );
   };
   
-  // Render compose form
-  const renderComposeForm = () => {
-    return (
-      <div className="compose-form">
-        <h3>Compose New Message</h3>
-        <div className="form-field">
-          <label htmlFor="recipient">To:</label>
-          <input 
-            type="text" 
-            id="recipient"
-            value={recipient}
-            onChange={(e) => setRecipient(e.target.value)}
-            placeholder="Recipient's EVR address"
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="subject">Subject:</label>
-          <input 
-            type="text" 
-            id="subject"
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="Message subject"
-          />
-        </div>
-        <div className="form-field">
-          <label htmlFor="message">Message:</label>
-          <textarea 
-            id="message"
-            value={messageContent}
-            onChange={(e) => setMessageContent(e.target.value)}
-            placeholder="Type your message here..."
-            rows={10}
-          />
-        </div>
-        <div className="form-actions">
-          <button 
-            className="cancel-btn"
-            onClick={() => {
-              setRecipient('');
-              setSubject('');
-              setMessageContent('');
-              setActiveView('dashboard');
-            }}
-          >
-            Cancel
-          </button>
-          <button 
-            className="send-btn"
-            disabled={!recipient || !subject || !messageContent || sendingMessage}
-            onClick={handleSendMessage}
-          >
-            {sendingMessage ? 'Sending...' : 'Send Message'}
-          </button>
-        </div>
-      </div>
-    );
-  };
-  
   // Render the actual content based on the active view
   const renderContent = () => {
     if (loading) {
@@ -438,7 +381,28 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
       case 'inbox':
         return <Inbox backend={backend} />;
       case 'compose':
-        return renderComposeForm();
+        return (
+          <ErrorBoundary>
+            <ComposeMessage 
+              backend={backend} 
+              initialRecipient={recipient}
+              initialSubject={subject}
+              initialContent={messageContent}
+              onMessageSent={() => {
+                setRecipient('');
+                setSubject('');
+                setMessageContent('');
+                setActiveView('dashboard');
+              }}
+              onCancel={() => {
+                setRecipient('');
+                setSubject('');
+                setMessageContent('');
+                setActiveView('dashboard');
+              }}
+            />
+          </ErrorBoundary>
+        );
       case 'contacts':
         return renderContacts();
       case 'wallet':

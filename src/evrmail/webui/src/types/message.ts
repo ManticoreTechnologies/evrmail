@@ -13,4 +13,14 @@ export interface OutgoingMessage {
   recipient: string;
   subject: string;
   content: string;
+  outbox?: string;
+  dry_run?: boolean;
+}
+
+// Interface for message sending result
+export interface MessageSendResult {
+  success: boolean;
+  txid?: string;
+  error?: string;
+  message?: string;
 } 
