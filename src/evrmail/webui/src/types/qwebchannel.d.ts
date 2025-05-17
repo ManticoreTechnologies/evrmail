@@ -40,6 +40,7 @@ interface Backend {
   send_message: (recipient: string, subject: string, message: string, outbox?: string, dry_run?: boolean) => Promise<any>;
   send_evr: (address: string, amount: number, dry_run?: boolean) => Promise<any>;
   generate_receive_address: (wallet_name?: string, friendly_name?: string) => Promise<any>;
+  create_new_wallet: (name?: string, passphrase?: string) => Promise<any>;
   navigate_browser: (url: string) => Promise<any>;
   check_daemon_status: () => Promise<any>;
   preload_app_data: () => Promise<any>;

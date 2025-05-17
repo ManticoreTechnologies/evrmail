@@ -398,6 +398,19 @@ class WebUIBridge(QObject):
                 "error": str(e)
             })
 
+    @pyqtSlot(str, str, result=str)
+    def create_new_wallet(self, name="", passphrase=""):
+        """Create a new wallet with an optional name and passphrase"""
+        try:
+            result = _create_new_wallet_impl(name, passphrase)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in create_new_wallet bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+
 # Implementation functions that the bridge class calls
 # These use the original code but are renamed to avoid conflicts
 
@@ -545,6 +558,10 @@ def _reject_contact_request_impl(address):
     """Implementation of reject_contact_request"""
     # Use the original implementation
     return reject_contact_request(address)
+
+def _create_new_wallet_impl(name="", passphrase=""):
+    """Create a new wallet implementation"""
+    return create_new_wallet(name, passphrase)
 
 # Global objects
 _daemon_thread = None
@@ -1822,11 +1839,78 @@ def reject_contact_request(address: str):
         gui_log("error", f"Error rejecting contact request: {str(e)}")
         return {"success": False, "error": str(e)}
 
+def create_new_wallet(name="", passphrase=""):
+    """Create a new wallet with optional name and passphrase"""
+    try:
+        from evrmail.wallet import utils, store
+        
+        # Generate a random name if none provided
+        if not name:
+            # Get words from a mnemonic to create a random name
+            words = utils.generate_mnemonic().split()
+            name = f"wallet_{words[0]}_{words[-1]}_{random.randint(1000, 9999)}"
+        
+        # Check if wallet already exists
+        if store.load_wallet(name) is not None:
+            return {
+                "success": False,
+                "error": f"Wallet '{name}' already exists. Choose another name."
+            }
+        
+        # Generate mnemonic & create wallet
+        mnemonic = utils.generate_mnemonic()
+        new_wallet = store.create_wallet(name, mnemonic, passphrase)
+        
+        # Return success with wallet info
+        return {
+            "success": True,
+            "name": name,
+            "mnemonic": mnemonic,  # Include mnemonic for backup purposes
+            "message": f"Wallet '{name}' created successfully."
+        }
+    except Exception as e:
+        gui_log("error", f"Error creating wallet: {str(e)}")
+        import traceback
+        gui_log("error", traceback.format_exc())
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
 def expose_all_functions():
-    """Register all functions to be exposed to JavaScript"""
-    # All functions with  are automatically exposed
-    # This function exists to ensure the module is imported and decorators are registered
-    pass 
+    """Expose all functions to the JavaScript environment"""
+    import eel
+    eel.expose(log)
+    eel.expose(get_log_entries)
+    eel.expose(get_settings)
+    eel.expose(save_settings)
+    eel.expose(get_wallet_balances)
+    eel.expose(get_wallet_addresses)
+    eel.expose(get_wallet_list)
+    eel.expose(get_utxos)
+    eel.expose(get_inbox_messages)
+    eel.expose(get_sent_messages)
+    eel.expose(send_message)
+    eel.expose(send_evr)
+    eel.expose(generate_receive_address)
+    eel.expose(create_new_wallet)
+    eel.expose(navigate_browser)
+    eel.expose(check_daemon_status)
+    eel.expose(preload_app_data)
+    eel.expose(get_messages)
+    eel.expose(mark_message_read)
+    eel.expose(delete_message)
+    eel.expose(get_message_stats)
+    eel.expose(get_network_status)
+    eel.expose(get_app_version)
+    eel.expose(get_wallet_info)
+    eel.expose(open_in_system_browser)
+    eel.expose(get_contacts)
+    eel.expose(get_contact_requests)
+    eel.expose(send_contact_request)
+    eel.expose(remove_contact)
+    eel.expose(accept_contact_request)
+    eel.expose(reject_contact_request)
 
 # Helper function for pubkey to address conversion in browser context
 def _pubkey_to_address(pubkey):

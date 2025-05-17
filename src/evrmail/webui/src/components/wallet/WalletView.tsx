@@ -5,6 +5,7 @@ import SendSection from './SendSection';
 import ReceiveSection from './ReceiveSection';
 import AddressesSection from './AddressesSection';
 import AssetsSection from './AssetsSection';
+import WalletManageSection from './WalletManageSection';
 import './Wallet.css';
 
 interface WalletViewProps {
@@ -12,7 +13,7 @@ interface WalletViewProps {
 }
 
 // Define wallet tab types
-type WalletTab = 'overview' | 'send' | 'receive' | 'addresses' | 'assets';
+type WalletTab = 'overview' | 'send' | 'receive' | 'addresses' | 'assets' | 'manage';
 
 const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
   // State for wallet data
@@ -115,6 +116,14 @@ const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
             assets={balances?.assets || {}}
           />
         );
+      case 'manage':
+        return (
+          <WalletManageSection 
+            backend={backend}
+            walletList={walletList}
+            onWalletCreated={refreshWallet}
+          />
+        );
       default:
         return <div>Unknown tab</div>;
     }
@@ -157,6 +166,12 @@ const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
             Assets
           </button>
         )}
+        <button 
+          className={`tab-button ${activeTab === 'manage' ? 'active' : ''}`}
+          onClick={() => setActiveTab('manage')}
+        >
+          Manage
+        </button>
         <button 
           className="refresh-button"
           onClick={refreshWallet}

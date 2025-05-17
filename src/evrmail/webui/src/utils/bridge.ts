@@ -214,4 +214,15 @@ export async function generateReceiveAddress(
   friendlyName?: string
 ): Promise<{success: boolean; address?: string; error?: string}> {
   return callBackend(backend, 'generate_receive_address', walletName, friendlyName);
+}
+
+/**
+ * Helper for creating a new wallet
+ */
+export async function createNewWallet(
+  backend: Backend | null,
+  name: string = '',
+  passphrase: string = ''
+): Promise<{success: boolean; name?: string; mnemonic?: string; error?: string; message?: string}> {
+  return callBackend(backend, 'create_new_wallet', name, passphrase);
 } 
