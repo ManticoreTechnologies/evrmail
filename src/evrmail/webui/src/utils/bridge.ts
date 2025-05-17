@@ -177,4 +177,41 @@ export async function rejectContactRequest(
   address: string
 ): Promise<{success: boolean, error?: string}> {
   return callBackend(backend, 'reject_contact_request', address);
+}
+
+/**
+ * Helper for wallet list
+ */
+export async function getWalletList(backend: Backend | null): Promise<string[]> {
+  return getFromBackend(backend, 'get_wallet_list');
+}
+
+/**
+ * Helper for UTXOs
+ */
+export async function getUTXOs(backend: Backend | null): Promise<any[]> {
+  return getFromBackend(backend, 'get_utxos');
+}
+
+/**
+ * Helper for sending EVR
+ */
+export async function sendEVR(
+  backend: Backend | null,
+  address: string,
+  amount: number,
+  dryRun = false
+): Promise<{success: boolean; txid?: string; error?: string; message?: string}> {
+  return callBackend(backend, 'send_evr', address, amount, dryRun);
+}
+
+/**
+ * Helper for generating a new receive address
+ */
+export async function generateReceiveAddress(
+  backend: Backend | null,
+  walletName: string = 'default',
+  friendlyName?: string
+): Promise<{success: boolean; address?: string; error?: string}> {
+  return callBackend(backend, 'generate_receive_address', walletName, friendlyName);
 } 

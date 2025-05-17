@@ -5,6 +5,7 @@ import Dashboard from './Dashboard';
 import Inbox from './inbox/Inbox';
 import ComposeMessage from './compose/ComposeMessage';
 import ContactsView from './contacts/ContactsView';
+import WalletView from './wallet/WalletView';
 import ErrorBoundary from './ErrorBoundary';
 import type { Message } from '../types/message';
 
@@ -368,7 +369,11 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
           />
         );
       case 'wallet':
-        return renderWallet();
+        return (
+          <WalletView
+            backend={backend}
+          />
+        );
       default:
         return <div>Unknown view</div>;
     }
