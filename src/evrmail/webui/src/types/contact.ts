@@ -4,11 +4,20 @@ export interface Contact {
   name: string;
   verified: boolean;
   pubkey?: string;
+  status?: string;
+}
+
+// Interface for contact requests
+export interface ContactRequest {
+  address: string;
+  name: string;
+  pubkey?: string;
+  status: string;
 }
 
 // Interface for outbox assets
 export interface OutboxAsset {
-  name: string;
+  asset_name: string;
   balance: number;
-  address: string;
+  verified: boolean;
 } 

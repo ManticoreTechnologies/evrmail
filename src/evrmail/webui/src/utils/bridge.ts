@@ -111,4 +111,70 @@ export async function getMessages(backend: Backend | null): Promise<Array<{
   read: boolean;
 }>> {
   return getFromBackend(backend, 'get_messages');
+}
+
+/**
+ * Helper for contacts
+ */
+export async function getContacts(backend: Backend | null): Promise<Record<string, any>> {
+  return getFromBackend(backend, 'get_contacts');
+}
+
+/**
+ * Helper for contact requests
+ */
+export async function getContactRequests(backend: Backend | null): Promise<Record<string, any>> {
+  return getFromBackend(backend, 'get_contact_requests');
+}
+
+/**
+ * Helper for sending contact requests
+ */
+export async function sendContactRequest(
+  backend: Backend | null,
+  address: string,
+  name?: string,
+  addressMode: string = "random",
+  fromAddress?: string,
+  dryRun: boolean = false
+): Promise<{success: boolean, error?: string}> {
+  return callBackend(
+    backend, 
+    'send_contact_request', 
+    address, 
+    name, 
+    addressMode,
+    fromAddress,
+    dryRun
+  );
+}
+
+/**
+ * Helper for removing contacts
+ */
+export async function removeContact(
+  backend: Backend | null,
+  address: string
+): Promise<{success: boolean, error?: string}> {
+  return callBackend(backend, 'remove_contact', address);
+}
+
+/**
+ * Helper for accepting contact requests
+ */
+export async function acceptContactRequest(
+  backend: Backend | null,
+  address: string
+): Promise<{success: boolean, error?: string}> {
+  return callBackend(backend, 'accept_contact_request', address);
+}
+
+/**
+ * Helper for rejecting contact requests
+ */
+export async function rejectContactRequest(
+  backend: Backend | null,
+  address: string
+): Promise<{success: boolean, error?: string}> {
+  return callBackend(backend, 'reject_contact_request', address);
 } 

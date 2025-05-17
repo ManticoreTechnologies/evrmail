@@ -4,6 +4,7 @@ import { getNetworkStatus, getMessages, getFromBackend, callBackend } from '../u
 import Dashboard from './Dashboard';
 import Inbox from './inbox/Inbox';
 import ComposeMessage from './compose/ComposeMessage';
+import ContactsView from './contacts/ContactsView';
 import ErrorBoundary from './ErrorBoundary';
 import type { Message } from '../types/message';
 
@@ -274,50 +275,6 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
     );
   };
   
-  // Render contacts list
-  const renderContacts = () => {
-    if (!contacts.length) {
-      return <div className="empty-state">No contacts yet</div>;
-    }
-    
-    return (
-      <div className="contacts-list">
-        {contacts.map(contact => (
-          <div key={contact.address} className="contact-item">
-            <div className="contact-name">{contact.name || 'Unnamed'}</div>
-            <div className="contact-address">{contact.address}</div>
-            <div className="contact-status">
-              {contact.verified ? '✓ Verified' : '⚠️ Unverified'}
-            </div>
-            <div className="contact-actions">
-              <button onClick={() => {
-                setRecipient(contact.address);
-                setActiveView('compose');
-              }}>
-                Message
-              </button>
-              <button onClick={async () => {
-                if (!backend) return;
-                
-                try {
-                  await callBackend(backend, 'remove_contact', contact.address);
-                  // Update contacts list
-                  setContacts(prevContacts => 
-                    prevContacts.filter(c => c.address !== contact.address)
-                  );
-                } catch (err) {
-                  console.error('Error removing contact:', err);
-                }
-              }}>
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  };
-  
   // Render wallet section
   const renderWallet = () => {
     if (!walletBalance) {
@@ -368,47 +325,52 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
   // Render the actual content based on the active view
   const renderContent = () => {
     if (loading) {
-      return <div className="loading">Loading...</div>;
+      return <div className="loading">Loading your data...</div>;
     }
 
     if (error) {
-      return <div className="error-message">{error}</div>;
+      return <div className="error">{error}</div>;
     }
 
     switch (activeView) {
       case 'dashboard':
-        return <Dashboard backend={backend} />;
+        return (
+          <Dashboard 
+            backend={backend}
+          />
+        );
       case 'inbox':
-        return <Inbox backend={backend} />;
+        return (
+          <Inbox 
+            backend={backend}
+          />
+        );
       case 'compose':
         return (
-          <ErrorBoundary>
-            <ComposeMessage 
-              backend={backend} 
-              initialRecipient={recipient}
-              initialSubject={subject}
-              initialContent={messageContent}
-              onMessageSent={() => {
-                setRecipient('');
-                setSubject('');
-                setMessageContent('');
-                setActiveView('dashboard');
-              }}
-              onCancel={() => {
-                setRecipient('');
-                setSubject('');
-                setMessageContent('');
-                setActiveView('dashboard');
-              }}
-            />
-          </ErrorBoundary>
+          <ComposeMessage
+            backend={backend}
+            initialRecipient={recipient}
+            initialSubject={subject}
+            initialContent={messageContent}
+            onMessageSent={() => {
+              setRecipient('');
+              setSubject('');
+              setMessageContent('');
+              setActiveView('dashboard');
+            }}
+            onCancel={() => setActiveView('dashboard')}
+          />
         );
       case 'contacts':
-        return renderContacts();
+        return (
+          <ContactsView
+            backend={backend}
+          />
+        );
       case 'wallet':
         return renderWallet();
       default:
-        return <Dashboard backend={backend} />;
+        return <div>Unknown view</div>;
     }
   };
 
