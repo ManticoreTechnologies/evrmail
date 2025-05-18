@@ -304,3 +304,10 @@ def _log_with_category(category: str, level: str, msg: str, *args, **kwargs):
         logger.error(msg, *args, **kwargs)
     elif log_level == logging.CRITICAL:
         logger.critical(msg, *args, **kwargs) 
+
+def set_logging_level(level: str):
+    """Set the logging level for all loggers"""
+    global _log_level
+    _log_level = LEVELS.get(level.lower(), logging.INFO)
+    for logger in logging.getLogger().handlers:
+        logger.setLevel(_log_level)

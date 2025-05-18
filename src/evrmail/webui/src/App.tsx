@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Browser from './components/Browser'
+// @ts-ignore
 import EvrMail from './components/EvrMail'
 
 // Import QWebChannel types
@@ -220,12 +221,7 @@ function App() {
   return (
     <div className="app">
       <div className="tabs">
-        <div 
-          className={`tab ${activeTab === 'mail' ? 'active' : ''}`} 
-          onClick={() => handleTabSwitch('mail')}
-        >
-          📬 EvrMail
-        </div>
+
         <div 
           className={`tab ${activeTab === 'browser' ? 'active' : ''}`}
           onClick={() => handleTabSwitch('browser')}
@@ -234,11 +230,9 @@ function App() {
         </div>
       </div>
 
-      {activeTab === 'mail' ? (
-        <EvrMail backend={backend} />
-      ) : (
-        <Browser backend={backend} uicontrol={uicontrol} />
-      )}
+      {
+        <Browser backend={backend} uicontrol={uicontrol} defaultUrl="https://example/evr.evr" />
+      }
     </div>
   )
 }

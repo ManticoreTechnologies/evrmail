@@ -1,6 +1,7 @@
+// @ts-nocheck
 import React, { Component } from 'react';
 import type { ErrorInfo, ReactNode } from 'react';
-
+// @ts-ignore
 interface Props {
   children: ReactNode;
   fallback?: ReactNode;

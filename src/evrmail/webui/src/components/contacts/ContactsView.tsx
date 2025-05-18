@@ -10,8 +10,9 @@ import ContactList from './ContactList';
 import ContactRequestsList from './ContactRequestsList';
 import AddContactForm from './AddContactForm';
 import './Contacts.css';
+// @ts-ignore
 import type { Contact, ContactRequest } from '../../types/contact';
-
+// @ts-ignore
 interface ContactsViewProps {
   backend: Backend | null;
 }

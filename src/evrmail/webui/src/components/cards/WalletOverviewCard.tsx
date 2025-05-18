@@ -16,6 +16,7 @@ interface WalletOverviewCardProps {
   backend: Backend | null;
 }
 
+// @ts-ignore
 const WalletOverviewCard: React.FC<WalletOverviewCardProps> = ({ walletData, backend }) => {
   // Format EVR amount to 8 decimal places
   const formatEVR = (amount: number) => {

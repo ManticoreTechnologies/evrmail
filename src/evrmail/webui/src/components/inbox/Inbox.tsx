@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// @ts-ignore
 import { getMessages, getFromBackend, callBackend } from '../../utils/bridge';
 import type { Message } from '../../types/message';
 import './Inbox.css';

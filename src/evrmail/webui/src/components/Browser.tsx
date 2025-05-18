@@ -5,10 +5,11 @@ import { callBackend } from '../utils/bridge';
 interface BrowserProps {
   backend: Backend | null;
   uicontrol: UIControl | null;
+  defaultUrl: string;
 }
 
-const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
-  const [url, setUrl] = useState('');
+const Browser: React.FC<BrowserProps> = ({ backend, uicontrol, defaultUrl }) => {
+  const [url, setUrl] = useState(defaultUrl);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const browserFrameRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,7 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
   };
 
   useEffect(() => {
+    
     // Clear any previous errors
     setError(null);
     
@@ -57,7 +59,11 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
         setError('Browser control not available');
         return;
       }
-      
+      if (typeof control.load_url === 'function') {
+        if (url) {
+          control.load_url(url);
+        }
+      }
       // Update frame position when component mounts (tab becomes active)
       setTimeout(updateFramePosition, 150);
       

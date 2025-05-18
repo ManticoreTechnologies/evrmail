@@ -34,10 +34,30 @@ class BackendBridge(QObject):
     def load_url(self, url):
         from .functions import get_evr_url
         # Process URL to handle IPFS/IPNS and add https:// if needed
-        processed_url = get_evr_url(url)
-        print(f"[JS → Python] Load URL: {url} → {processed_url}")
-        main_window.browser_view.setUrl(QUrl(processed_url))
-        main_window.browser_view.show()
+        if url.endswith(".evr"):
+            # remove https:// from the url
+            url = url.replace("https://", "")
+            # and purge http:// from the url
+            url = url.replace("http://", "")
+            # and purge evrmore:// from the url
+            url = url.replace("evrmore://", "")
+            
+            processed_url = get_evr_url(url)
+            print(f"[JS → Python] Processed URL: {processed_url}")
+            print(f"[JS → Python] Processed URL type: {type(processed_url)}")
+            if type(processed_url) is not str:
+                print(f"[JS → Python] Processed URL is not a string")
+                # browser failed so show error page, like custom html page, load up ../webui/public/no_payload.html
+                main_window.browser_view.setUrl(QUrl("file://" + resource_path("../webui/public/no_payload.html")))
+                main_window.browser_view.show()
+            elif type(processed_url) is str:
+                print(f"[JS → Python] Load URL: {url} → {processed_url}")
+                main_window.browser_view.setUrl(QUrl(processed_url))
+                main_window.browser_view.show()
+        else:
+            print(f"[JS → Python] Load URL: {url}")
+            main_window.browser_view.setUrl(QUrl(url))
+            main_window.browser_view.show()
 
     @pyqtSlot(str)
     def log(self, message):

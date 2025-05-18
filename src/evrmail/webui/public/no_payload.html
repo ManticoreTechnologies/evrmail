@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>404 - Evrmail</title>
+<style>
+  /* Replace Google Fonts with system fonts to avoid CORS issues */
+  body {
+    margin: 0;
+    background: radial-gradient(ellipse at center, #1a1a1a 0%, #0f0f0f 100%);
+    color: #ffffffcc;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  h1 {
+    font-family: 'Arial', sans-serif;
+    font-size: 60px;
+    margin-top: 60px;
+    color: #3ea6ff;
+    text-shadow: 0 0 20px #3ea6ff, 0 0 40px #3ea6ff;
+    animation: flicker 2s infinite;
+  }
+
+  p {
+    font-size: 18px;
+    color: #999;
+  }
+
+  canvas {
+    background: #141414;
+    display: block;
+    margin: 30px auto;
+    border: 2px solid #3ea6ff;
+    box-shadow: 0 0 10px #3ea6ff99;
+    border-radius: 4px;
+  }
+
+  .game-info {
+    margin: 15px auto;
+    max-width: 480px;
+    display: flex;
+    justify-content: space-between;
+    color: #3ea6ff;
+    font-size: 18px;
+  }
+
+  .game-over {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    border: 2px solid #3ea6ff;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 0 20px #3ea6ff;
+    z-index: 100;
+    display: none;
+  }
+
+  .game-over h2 {
+    font-family: 'Arial', sans-serif;
+    color: #ff4f81;
+    margin-top: 0;
+  }
+
+  .game-over button {
+    background-color: #3ea6ff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    color: #000;
+    font-family: 'Courier New', monospace;
+    cursor: pointer;
+    margin-top: 15px;
+    font-size: 16px;
+  }
+
+  .game-instructions {
+    margin: 15px auto;
+    max-width: 480px;
+    font-size: 14px;
+    color: #999;
+  }
+
+  #error-message {
+    color: #ff4f81;
+    font-size: 16px;
+    margin: 15px auto;
+    max-width: 480px;
+    display: none;
+  }
+
+  @keyframes flicker {
+    0%, 100% { opacity: 1; }
+    45% { opacity: 0.85; }
+    50% { opacity: 0.4; }
+    55% { opacity: 0.95; }
+    60% { opacity: 0.3; }
+  }
+</style>
+</head>
+<body>
+
+<h1>🚫 404 - Evrmail</h1>
+<p>The requested .evr domain could not be found or has no IPFS content.</p>
+
+<div class="game-info">
+  <span>Score: <span id="score">0</span></span>
+  <span>Lives: <span id="lives">3</span></span>
+</div>
+
+<canvas id="game" width="480" height="360"></canvas>
+<div id="error-message"></div>
+
+<div class="game-instructions">
+  CONTROLS: Arrow keys to move, SPACE to shoot
+</div>
+
+<div class="game-over" id="gameOverScreen">
+  <h2>GAME OVER</h2>
+  <p>Final Score: <span id="finalScore">0</span></p>
+  <button id="restartButton">Play Again</button>
+</div>
+
+<script>
+// Immediately show something on the canvas to verify it's working
+try {
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const errorMessage = document.getElementById('error-message');
+  
+  // Show immediate feedback that canvas is working
+  ctx.fillStyle = '#3ea6ff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#000';
+  ctx.font = '20px Courier New';
+  ctx.fillText('Loading game...', canvas.width/2 - 80, canvas.height/2);
+  
+  // DOM elements
+  const scoreElement = document.getElementById('score');
+  const livesElement = document.getElementById('lives');
+  const gameOverScreen = document.getElementById('gameOverScreen');
+  const finalScoreElement = document.getElementById('finalScore');
+  const restartButton = document.getElementById('restartButton');
+  
+  // Game state
+  let score = 0;
+  let lives = 3;
+  let gameActive = true;
+  let invincibleTimer = 0;
+  
+  const ship = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    angle: 0,
+    radius: 12,
+    vx: 0,
+    vy: 0
+  };
+  
+  let keys = {};
+  let asteroids = [];
+  let bullets = [];
+  let particles = [];
+  
+  function resetGame() {
+    try {
+      ship.x = canvas.width / 2;
+      ship.y = canvas.height / 2;
+      ship.angle = 0;
+      ship.vx = 0;
+      ship.vy = 0;
+      
+      score = 0;
+      lives = 3;
+      gameActive = true;
+      invincibleTimer = 120; // 2 seconds of invincibility on restart
+      
+      scoreElement.textContent = score;
+      livesElement.textContent = lives;
+      
+      asteroids = [];
+      bullets = [];
+      particles = [];
+      
+      for (let i = 0; i < 5; i++) spawnAsteroid();
+      
+      gameOverScreen.style.display = 'none';
+      
+      // Force clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    } catch (err) {
+      showError("Reset game error: " + err.message);
+    }
+  }
+  
+  function spawnAsteroid(x, y, size) {
+    try {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 1.5 + 0.5;
+      const radius = size || Math.random() * 15 + 15;
+      
+      // If x and y are provided, use them (for asteroid splitting)
+      // Otherwise, spawn at a random edge of the screen
+      if (x === undefined || y === undefined) {
+        if (Math.random() > 0.5) {
+          x = Math.random() > 0.5 ? 0 : canvas.width;
+          y = Math.random() * canvas.height;
+        } else {
+          x = Math.random() * canvas.width;
+          y = Math.random() > 0.5 ? 0 : canvas.height;
+        }
+      }
+      
+      asteroids.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        r: radius,
+        size: size ? 'small' : 'large'
+      });
+    } catch (err) {
+      showError("Spawn asteroid error: " + err.message);
+    }
+  }
+  
+  function createParticles(x, y, color, count) {
+    try {
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 2 + 1;
+        particles.push({
+          x: x,
+          y: y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          radius: Math.random() * 2 + 1,
+          color: color,
+          life: Math.random() * 30 + 20
+        });
+      }
+    } catch (err) {
+      showError("Create particles error: " + err.message);
+    }
+  }
+  
+  function drawShip() {
+    try {
+      ctx.save();
+      ctx.translate(ship.x, ship.y);
+      ctx.rotate(ship.angle);
+      
+      // Flash ship when invincible
+      if (invincibleTimer > 0 && Math.floor(invincibleTimer / 5) % 2 === 0) {
+        ctx.fillStyle = '#ff4f81';
+      } else {
+        ctx.fillStyle = '#3ea6ff';
+      }
+      
+      ctx.beginPath();
+      ctx.moveTo(15, 0);
+      ctx.lineTo(-10, -8);
+      ctx.lineTo(-10, 8);
+      ctx.closePath();
+      ctx.fill();
+      
+      // Thrust flame when accelerating
+      if (keys['ArrowUp']) {
+        ctx.beginPath();
+        ctx.moveTo(-10, -5);
+        ctx.lineTo(-18, 0);
+        ctx.lineTo(-10, 5);
+        ctx.fillStyle = '#ff4f81';
+        ctx.fill();
+      }
+      
+      ctx.restore();
+    } catch (err) {
+      showError("Draw ship error: " + err.message);
+    }
+  }
+  
+  function drawAsteroids() {
+    try {
+      asteroids.forEach(a => {
+        ctx.beginPath();
+        ctx.arc(a.x, a.y, a.r, 0, Math.PI * 2);
+        ctx.fillStyle = a.size === 'small' ? '#666' : '#888';
+        ctx.fill();
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    } catch (err) {
+      showError("Draw asteroids error: " + err.message);
+    }
+  }
+  
+  function drawBullets() {
+    try {
+      ctx.fillStyle = '#ff4f81';
+      bullets.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    } catch (err) {
+      showError("Draw bullets error: " + err.message);
+    }
+  }
+  
+  function drawParticles() {
+    try {
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = p.color;
+        ctx.fill();
+      });
+    } catch (err) {
+      showError("Draw particles error: " + err.message);
+    }
+  }
+  
+  function checkCollisions() {
+    try {
+      // Ship and asteroids
+      if (invincibleTimer <= 0) {
+        for (let i = 0; i < asteroids.length; i++) {
+          const a = asteroids[i];
+          const dx = ship.x - a.x;
+          const dy = ship.y - a.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < ship.radius + a.r) {
+            lives--;
+            livesElement.textContent = lives;
+            createParticles(ship.x, ship.y, '#3ea6ff', 20);
+            
+            // Reset ship position
+            ship.x = canvas.width / 2;
+            ship.y = canvas.height / 2;
+            ship.vx = 0;
+            ship.vy = 0;
+            
+            // Give temporary invincibility
+            invincibleTimer = 180; // 3 seconds at 60fps
+            
+            if (lives <= 0) {
+              gameOver();
+            }
+            
+            break;
+          }
+        }
+      }
+      
+      // Bullets and asteroids
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        
+        for (let j = asteroids.length - 1; j >= 0; j--) {
+          const a = asteroids[j];
+          const dx = b.x - a.x;
+          const dy = b.y - a.y;
+          const distance = Math.sqrt(dx * dx + dy * dy);
+          
+          if (distance < 3 + a.r) {
+            // Remove bullet
+            bullets.splice(i, 1);
+            
+            // Create explosion particles
+            createParticles(a.x, a.y, '#888', 15);
+            
+            // Split asteroid or remove if small
+            if (a.size === 'large') {
+              // Spawn two smaller asteroids
+              spawnAsteroid(a.x, a.y, a.r / 1.5);
+              spawnAsteroid(a.x, a.y, a.r / 1.5);
+              score += 20;
+            } else {
+              score += 50;
+            }
+            
+            // Remove asteroid
+            asteroids.splice(j, 1);
+            
+            // Update score
+            scoreElement.textContent = score;
+            
+            // Occasionally spawn a new large asteroid to keep the game going
+            if (Math.random() < 0.2) {
+              spawnAsteroid();
+            }
+            
+            break;
+          }
+        }
+      }
+    } catch (err) {
+      showError("Check collisions error: " + err.message);
+    }
+  }
+  
+  function gameOver() {
+    try {
+      gameActive = false;
+      finalScoreElement.textContent = score;
+      gameOverScreen.style.display = 'block';
+    } catch (err) {
+      showError("Game over error: " + err.message);
+    }
+  }
+  
+  function update() {
+    try {
+      if (!gameActive) return;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Controls (only if game is active)
+      if (keys['ArrowLeft']) ship.angle -= 0.06;
+      if (keys['ArrowRight']) ship.angle += 0.06;
+      if (keys['ArrowUp']) {
+        ship.vx += Math.cos(ship.angle) * 0.2;
+        ship.vy += Math.sin(ship.angle) * 0.2;
+      }
+      
+      ship.x += ship.vx;
+      ship.y += ship.vy;
+      ship.vx *= 0.99;
+      ship.vy *= 0.99;
+      
+      // Decrease invincibility timer
+      if (invincibleTimer > 0) invincibleTimer--;
+      
+      // Screen wrap
+      if (ship.x < 0) ship.x = canvas.width;
+      if (ship.x > canvas.width) ship.x = 0;
+      if (ship.y < 0) ship.y = canvas.height;
+      if (ship.y > canvas.height) ship.y = 0;
+      
+      // Asteroids
+      asteroids.forEach(a => {
+        a.x += a.vx;
+        a.y += a.vy;
+        if (a.x < -a.r) a.x = canvas.width + a.r;
+        if (a.x > canvas.width + a.r) a.x = -a.r;
+        if (a.y < -a.r) a.y = canvas.height + a.r;
+        if (a.y > canvas.height + a.r) a.y = -a.r;
+      });
+      
+      // Bullets
+      for (let i = bullets.length - 1; i >= 0; i--) {
+        const b = bullets[i];
+        b.x += b.vx;
+        b.y += b.vy;
+        b.life--;
+        
+        if (b.life <= 0 || b.x < 0 || b.x > canvas.width || b.y < 0 || b.y > canvas.height) {
+          bullets.splice(i, 1);
+        }
+      }
+      
+      // Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+      
+      // Check collisions
+      checkCollisions();
+      
+      // Draw everything
+      drawParticles();
+      drawBullets();
+      drawAsteroids();
+      if (gameActive) drawShip();
+      
+      // Continue the game loop
+      requestAnimationFrame(update);
+    } catch (err) {
+      showError("Update error: " + err.message);
+      
+      // Try to continue the game despite the error
+      setTimeout(() => requestAnimationFrame(update), 1000);
+    }
+  }
+  
+  function shoot() {
+    try {
+      if (!gameActive) return;
+      
+      bullets.push({
+        x: ship.x + Math.cos(ship.angle) * 15,
+        y: ship.y + Math.sin(ship.angle) * 15,
+        vx: Math.cos(ship.angle) * 5,
+        vy: Math.sin(ship.angle) * 5,
+        life: 60 // bullet expires after 60 frames
+      });
+    } catch (err) {
+      showError("Shoot error: " + err.message);
+    }
+  }
+  
+  function showError(message) {
+    console.error(message);
+    errorMessage.textContent = message;
+    errorMessage.style.display = 'block';
+    setTimeout(() => {
+      errorMessage.style.display = 'none';
+    }, 3000);
+  }
+  
+  // Controls
+  addEventListener('keydown', e => {
+    try {
+      keys[e.key] = true;
+      if (e.key === ' ') shoot();
+      
+      // Prevent scrolling with arrow keys
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+    } catch (err) {
+      showError("Keydown error: " + err.message);
+    }
+  });
+  
+  addEventListener('keyup', e => {
+    try {
+      keys[e.key] = false;
+    } catch (err) {
+      showError("Keyup error: " + err.message);
+    }
+  });
+  
+  // Restart game on button click
+  restartButton.addEventListener('click', resetGame);
+  
+  // Initialize game
+  resetGame();
+  
+  // Start the game loop
+  setTimeout(() => {
+    try {
+      update();
+    } catch (err) {
+      showError("Game startup error: " + err.message);
+    }
+  }, 500);
+  
+} catch (err) {
+  // Critical initialization error
+  console.error("Critical error:", err);
+  document.body.innerHTML += `<div style="color: red; padding: 20px;">Error initializing game: ${err.message}</div>`;
+}
+</script>
+</body>
+</html>

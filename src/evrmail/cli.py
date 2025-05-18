@@ -94,4 +94,4 @@ def main():
 
 def gui():
     evrmail_gui_app()
-    
+
