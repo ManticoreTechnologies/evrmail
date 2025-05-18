@@ -32,10 +32,11 @@ def resource_path(relative_path):
 class BackendBridge(QObject):
     @pyqtSlot(str)
     def load_url(self, url):
-        if not url.startswith("http"):
-            url = "https://" + url
-        print(f"[JS → Python] Load URL: {url}")
-        main_window.browser_view.setUrl(QUrl(url))
+        from .functions import get_evr_url
+        # Process URL to handle IPFS/IPNS and add https:// if needed
+        processed_url = get_evr_url(url)
+        print(f"[JS → Python] Load URL: {url} → {processed_url}")
+        main_window.browser_view.setUrl(QUrl(processed_url))
         main_window.browser_view.show()
 
     @pyqtSlot(str)
