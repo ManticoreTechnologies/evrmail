@@ -1084,6 +1084,15 @@ def navigate_browser(url):
     urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
     
     try:
+        # Basic validation and sanitization
+        url = url.strip()
+        if not url:
+            return {
+                "success": False,
+                "error": "Empty URL provided",
+                "html": "<html><body><h1>Error: No URL provided</h1><p>Please enter a valid URL.</p></body></html>"
+            }
+        
         gui_log("info", f"Browser navigating to: {url}")
         
         # For EVR domains, fetch from IPFS via blockchain
@@ -1294,6 +1303,8 @@ def navigate_browser(url):
         else:
             # Add http:// if missing
             if not url.startswith("http://") and not url.startswith("https://"):
+                # Properly encode spaces and special characters
+                url = url.replace(" ", "%20")
                 url = "https://" + url
                 
             gui_log("info", f"Fetching regular URL: {url}")
@@ -1305,68 +1316,104 @@ def navigate_browser(url):
                 'Accept-Language': 'en-US,en;q=0.5',
             }
             
-            # First try with verification
+            # Try to fetch the URL with proper error handling
             try:
-                response = requests.get(
-                    url, 
-                    headers=headers, 
-                    timeout=10,
-                    verify=True
-                )
-                response.raise_for_status()
-            except (requests.exceptions.SSLError, requests.exceptions.ConnectionError) as e:
-                # If SSL verification fails, try without verification
-                gui_log("warning", f"SSL verification failed, retrying without: {str(e)}")
-                response = requests.get(
-                    url, 
-                    headers=headers, 
-                    timeout=10,
-                    verify=False
-                )
-                response.raise_for_status()
-            
-            # Only process HTML content
-            content_type = response.headers.get('Content-Type', '')
-            if 'text/html' in content_type:
-                # Get the content
-                content = response.text
-                
-                # Process with BeautifulSoup for security
+                # First try with verification
                 try:
-                    soup = BeautifulSoup(content, 'html.parser')
-                    
-                    # Add base tag to handle relative URLs
-                    base_tag = soup.new_tag('base', href=response.url)
-                    if soup.head:
-                        soup.head.insert(0, base_tag)
-                    else:
-                        # Create head if it doesn't exist
-                        head = soup.new_tag('head')
-                        head.append(base_tag)
-                        if soup.html:
-                            soup.html.insert(0, head)
-                    
-                    # Optionally remove scripts for security
-                    # for script in soup(["script"]):
-                    #     script.extract()
-                    
-                    # Get the processed HTML
-                    processed_content = str(soup)
-                except Exception as e:
-                    gui_log("warning", f"Error processing HTML with BeautifulSoup: {str(e)}")
-                    processed_content = content
+                    response = requests.get(
+                        url, 
+                        headers=headers, 
+                        timeout=10,
+                        verify=True
+                    )
+                    response.raise_for_status()
+                except (requests.exceptions.SSLError, requests.exceptions.ConnectionError) as e:
+                    # If SSL verification fails, try without verification
+                    gui_log("warning", f"SSL verification failed, retrying without: {str(e)}")
+                    response = requests.get(
+                        url, 
+                        headers=headers, 
+                        timeout=10,
+                        verify=False
+                    )
+                    response.raise_for_status()
                 
-                return {
-                    "success": True,
-                    "type": "regular_url",
-                    "content": processed_content,
-                    "url": response.url
-                }
-            else:
-                # For non-HTML content like PDFs, images, etc., suggest opening in system browser
+                # Only process HTML content
+                content_type = response.headers.get('Content-Type', '')
+                if 'text/html' in content_type:
+                    # Get the content
+                    content = response.text
+                    
+                    # Process with BeautifulSoup for security
+                    try:
+                        soup = BeautifulSoup(content, 'html.parser')
+                        
+                        # Add base tag to handle relative URLs
+                        base_tag = soup.new_tag('base', href=response.url)
+                        if soup.head:
+                            soup.head.insert(0, base_tag)
+                        else:
+                            # Create head if it doesn't exist
+                            head = soup.new_tag('head')
+                            head.append(base_tag)
+                            if soup.html:
+                                soup.html.insert(0, head)
+                        
+                        # Optionally remove scripts for security
+                        # for script in soup(["script"]):
+                        #     script.extract()
+                        
+                        # Get the processed HTML
+                        processed_content = str(soup)
+                    except Exception as e:
+                        gui_log("warning", f"Error processing HTML with BeautifulSoup: {str(e)}")
+                        processed_content = content
+                    
+                    return {
+                        "success": True,
+                        "type": "regular_url",
+                        "content": processed_content,
+                        "url": response.url
+                    }
+                else:
+                    # For non-HTML content like PDFs, images, etc., suggest opening in system browser
+                    return {
+                        "success": False,
+                        "error": f"Content type '{content_type}' not supported in embedded browser. Try opening in system browser."
+                    }
+            except requests.exceptions.ConnectionError as conn_err:
+                # Handle DNS resolution errors or connection issues
+                error_message = f"Could not connect to {url.split('://')[-1].split('/')[0]}"
+                gui_log("error", f"Connection error: {str(conn_err)}")
                 return {
                     "success": False,
-                    "error": f"Content type '{content_type}' not supported in embedded browser. Try opening in system browser."
+                    "error": error_message,
+                    "html": f"<html><body><h1>Connection Error</h1><p>{error_message}</p><p>The domain name could not be resolved or the server is not responding.</p></body></html>"
+                }
+            except requests.exceptions.Timeout as timeout_err:
+                # Handle request timeouts
+                gui_log("error", f"Request timed out: {str(timeout_err)}")
+                return {
+                    "success": False,
+                    "error": "Request timed out",
+                    "html": "<html><body><h1>Request Timed Out</h1><p>The server took too long to respond.</p></body></html>"
+                }
+            except requests.exceptions.HTTPError as http_err:
+                # Handle HTTP errors (4xx, 5xx status codes)
+                status_code = http_err.response.status_code if hasattr(http_err, 'response') else "unknown"
+                gui_log("error", f"HTTP error {status_code}: {str(http_err)}")
+                return {
+                    "success": False,
+                    "error": f"HTTP Error: {status_code}",
+                    "html": f"<html><body><h1>HTTP Error {status_code}</h1><p>The server returned an error: {http_err}</p></body></html>"
+                }
+            except Exception as e:
+                # Catch any other request exceptions
+                gui_log("error", f"Error fetching URL: {str(e)}")
+                return {
+                    "success": False,
+                    "error": f"Failed to load URL: {str(e)}",
+                    "html": f"<html><body><h1>Error Loading Page</h1><p>An error occurred while trying to load the page: {str(e)}</p></body></html>"
                 }
     except Exception as e:
         gui_log("error", f"Error in navigate_browser: {str(e)}")
@@ -1374,7 +1421,8 @@ def navigate_browser(url):
         gui_log("error", traceback.format_exc())
         return {
             "success": False,
-            "error": f"Failed to load URL: {str(e)}"
+            "error": f"Failed to load URL: {str(e)}",
+            "html": f"<html><body><h1>Error</h1><p>Failed to load URL: {str(e)}</p></body></html>"
         }
 
 
@@ -2052,11 +2100,24 @@ def _pubkey_to_address(pubkey):
             return None
 
 def get_evr_url(url):
+    # Sanitize URL by removing any problematic characters or spaces
+    url = url.strip()
+    
+    # Basic URL validation
+    if not url:
+        return {
+            "success": False,
+            "error": "Empty URL provided"
+        }
+    
     # Handle non-EVR domains - treat them as normal URLs
     if not url.endswith(".evr"):
         # Add http:// if missing
         if not url.startswith("http://") and not url.startswith("https://"):
+            # Replace spaces with proper URL encoding
+            url = url.replace(" ", "%20")
             url = "https://" + url
+        # Just return formatted URL without making any network requests
         return url
         
     # For EVR domains, proceed with the special handling logic

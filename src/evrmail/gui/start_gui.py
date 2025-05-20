@@ -32,29 +32,73 @@ def resource_path(relative_path):
 class BackendBridge(QObject):
     @pyqtSlot(str)
     def load_url(self, url):
-        from .functions import get_evr_url
-        # Process URL to handle IPFS/IPNS and add https:// if needed
-        processed_url = get_evr_url(url)
-        print(f"[JS → Python] Load URL: {url} → {processed_url}")
+        from .functions import get_evr_url, navigate_browser
         
-        # Check if processed_url is a dictionary (error response from EVR domain handling)
-        # or a string (actual URL for normal domains or successfully processed EVR domains)
-        if isinstance(processed_url, dict):
-            error_msg = processed_url.get('error', 'Unknown error')
-            print(f"Error processing URL: {error_msg}")
+        try:
+            # Sanitize and validate URL
+            url = url.strip()
+            if not url:
+                self._show_error_page("Empty URL", "Please enter a valid URL.")
+                return
             
-            # Add a proper error page or fallback behavior
-            # For now, just format the original URL properly and use it
-            if not url.startswith("http://") and not url.startswith("https://"):
-                fallback_url = "https://" + url
-            else:
-                fallback_url = url
+            # Special handling for EVR domains
+            if url.endswith(".evr"):
+                # Process EVR domain URLs
+                processed_url = get_evr_url(url)
+                print(f"[JS → Python] Load URL: {url} → {processed_url}")
                 
-            main_window.browser_view.setUrl(QUrl(fallback_url))
-        else:
-            # Normal case - use the processed URL
-            main_window.browser_view.setUrl(QUrl(processed_url))
-        
+                # Check if processed_url is a dictionary (error response)
+                if isinstance(processed_url, dict):
+                    error_msg = processed_url.get('error', 'Unknown error')
+                    print(f"Error processing EVR URL: {error_msg}")
+                    
+                    # Display a generic error page
+                    self._show_error_page("Error Processing EVR Domain", error_msg)
+                else:
+                    # Normal case - use the processed URL
+                    main_window.browser_view.setUrl(QUrl(processed_url))
+                    main_window.browser_view.show()
+            else:
+                # For regular URLs, format them and load directly
+                if not url.startswith("http://") and not url.startswith("https://"):
+                    # Handle spaces and special characters
+                    url = url.replace(" ", "%20")
+                    url = "https://" + url
+                
+                print(f"[JS → Python] Load URL: {url}")
+                main_window.browser_view.setUrl(QUrl(url))
+                main_window.browser_view.show()
+        except Exception as e:
+            print(f"Error navigating to URL: {str(e)}")
+            self._show_error_page("Navigation Error", f"An error occurred: {str(e)}")
+    
+    def _show_error_page(self, title, message):
+        """Display a simple error page in the browser view"""
+        error_html = f"""
+        <html>
+        <head>
+            <title>{title}</title>
+            <style>
+                body {{ font-family: Arial, sans-serif; padding: 20px; text-align: center; }}
+                .error-container {{ max-width: 600px; margin: 100px auto; padding: 20px; 
+                                   border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
+                h1 {{ color: #e74c3c; }}
+                p {{ color: #333; line-height: 1.6; }}
+            </style>
+        </head>
+        <body>
+            <div class="error-container">
+                <h1>{title}</h1>
+                <p>{message}</p>
+            </div>
+        </body>
+        </html>
+        """
+        self._show_error_content(error_html)
+    
+    def _show_error_content(self, html_content):
+        """Display custom HTML content in the browser view"""
+        main_window.browser_view.setHtml(html_content)
         main_window.browser_view.show()
 
     @pyqtSlot(str)
