@@ -36,7 +36,25 @@ class BackendBridge(QObject):
         # Process URL to handle IPFS/IPNS and add https:// if needed
         processed_url = get_evr_url(url)
         print(f"[JS → Python] Load URL: {url} → {processed_url}")
-        main_window.browser_view.setUrl(QUrl(processed_url))
+        
+        # Check if processed_url is a dictionary (error response from EVR domain handling)
+        # or a string (actual URL for normal domains or successfully processed EVR domains)
+        if isinstance(processed_url, dict):
+            error_msg = processed_url.get('error', 'Unknown error')
+            print(f"Error processing URL: {error_msg}")
+            
+            # Add a proper error page or fallback behavior
+            # For now, just format the original URL properly and use it
+            if not url.startswith("http://") and not url.startswith("https://"):
+                fallback_url = "https://" + url
+            else:
+                fallback_url = url
+                
+            main_window.browser_view.setUrl(QUrl(fallback_url))
+        else:
+            # Normal case - use the processed URL
+            main_window.browser_view.setUrl(QUrl(processed_url))
+        
         main_window.browser_view.show()
 
     @pyqtSlot(str)
