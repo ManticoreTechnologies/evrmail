@@ -11,7 +11,8 @@ from .logger import (
     APP, GUI, DAEMON, WALLET, CHAIN, NETWORK, DEBUG,
     set_enabled_categories,
     set_colored_output,
-    set_daemon_console_output
+    set_daemon_console_output,
+    set_logging_level
 )
 
 # Log entry storage - for use by the GUI
@@ -59,5 +60,6 @@ __all__ = [
     "APP", "GUI", "DAEMON", "WALLET", "CHAIN", "NETWORK", "DEBUG",
     "set_enabled_categories",
     "set_colored_output",
+    "set_logging_level",
     "set_daemon_console_output"
 ]

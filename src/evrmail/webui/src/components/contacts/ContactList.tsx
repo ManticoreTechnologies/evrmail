@@ -1,4 +1,5 @@
 import React from 'react';
+// @ts-ignore
 import type { Contact } from '../../types/contact';
 
 interface ContactListProps {

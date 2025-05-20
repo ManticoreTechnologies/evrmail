@@ -25,7 +25,7 @@ import sys
 import logging
 
 # Setup default logging at import time
-from evrmail.utils.logger import configure_logging, APP, GUI, DAEMON, WALLET, CHAIN, NETWORK, DEBUG
+from evrmail.utils.logger import configure_logging, APP, GUI, DAEMON, WALLET, CHAIN, NETWORK, DEBUG, set_logging_level
 log_dir = configure_logging(level=logging.INFO)
 print(f"Logs directory configured: {log_dir}")
 

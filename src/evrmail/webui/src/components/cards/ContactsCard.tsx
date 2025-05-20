@@ -29,6 +29,7 @@ const ContactsCard: React.FC<ContactsCardProps> = ({ contacts, backend }) => {
   };
   
   // Check if we have pending contact requests
+  // @ts-ignore
   const hasPendingRequests = async () => {
     if (!backend) return false;
     

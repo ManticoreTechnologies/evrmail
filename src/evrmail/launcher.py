@@ -13,7 +13,7 @@ from pathlib import Path
 
 from . import __version__
 from .utils import set_logging_level
-from .daemon.daemon import EVRMailDaemon
+from .daemon import EVRMailDaemon
 from .gui.gui import start_gui
 
 # Configure logger
