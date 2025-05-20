@@ -10,6 +10,7 @@ declare global {
     qt: {
       webChannelTransport: any
     }
+    updateBrowserLoadingState: (isLoading: boolean, url: string, success: boolean) => void
   }
 }
 
@@ -27,6 +28,25 @@ function App() {
   const [uicontrol, setUIControl] = useState<UIControl | null>(null)
   const [initialized, setInitialized] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Add the global browser loading state update function
+  useEffect(() => {
+    // Create a global function to receive loading state updates from Python
+    window.updateBrowserLoadingState = (isLoading, url, success) => {
+      console.log(`[Python→JS] Browser loading state: ${isLoading ? 'loading' : 'done'} for ${url} (success: ${success})`);
+      
+      // Dispatch a custom event that can be listened to by the Browser component
+      const event = new CustomEvent('browserLoadingStateChanged', { 
+        detail: { isLoading, url, success } 
+      });
+      window.dispatchEvent(event);
+    };
+    
+    // Clean up the function when component unmounts
+    return () => {
+      window.updateBrowserLoadingState = () => {}; // Empty function
+    };
+  }, []);
   
   useEffect(() => {
     // Make sure we only try to initialize once

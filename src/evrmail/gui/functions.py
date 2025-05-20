@@ -1385,6 +1385,91 @@ def navigate_browser(url):
                 # Handle DNS resolution errors or connection issues
                 error_message = f"Could not connect to {url.split('://')[-1].split('/')[0]}"
                 gui_log("error", f"Connection error: {str(conn_err)}")
+                
+                # Check if it's a DNS resolution error
+                if "Name or service not known" in str(conn_err) or "Failed to resolve" in str(conn_err):
+                    domain = url.split('://')[-1].split('/')[0]
+                    return {
+                        "success": False,
+                        "error": f"Address not found: {domain}",
+                        "html": f"""
+                        <html>
+                        <head>
+                            <title>Address Not Found</title>
+                            <style>
+                                body {{
+                                    font-family: Arial, sans-serif;
+                                    background-color: #f5f5f5;
+                                    margin: 0;
+                                    padding: 0;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    height: 100vh;
+                                    color: #333;
+                                }}
+                                .error-container {{
+                                    max-width: 600px;
+                                    margin: 0 auto;
+                                    padding: 30px;
+                                    background: white;
+                                    border-radius: 8px;
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                                    text-align: center;
+                                }}
+                                h1 {{
+                                    color: #e74c3c;
+                                    margin-bottom: 20px;
+                                }}
+                                .domain {{
+                                    font-weight: bold;
+                                    color: #2c3e50;
+                                    word-break: break-all;
+                                    padding: 10px;
+                                    background: #f8f9fa;
+                                    border-radius: 4px;
+                                    margin: 15px 0;
+                                    display: inline-block;
+                                }}
+                                .suggestions {{
+                                    text-align: left;
+                                    margin-top: 25px;
+                                    padding-top: 20px;
+                                    border-top: 1px solid #eee;
+                                }}
+                                .suggestions h3 {{
+                                    color: #2c3e50;
+                                }}
+                                .suggestions ul {{
+                                    margin: 0;
+                                    padding-left: 20px;
+                                }}
+                                .suggestions li {{
+                                    margin-bottom: 10px;
+                                    color: #555;
+                                }}
+                            </style>
+                        </head>
+                        <body>
+                            <div class="error-container">
+                                <h1>Address Not Found</h1>
+                                <p>The browser could not find the address:</p>
+                                <div class="domain">{domain}</div>
+                                <div class="suggestions">
+                                    <h3>This might be because:</h3>
+                                    <ul>
+                                        <li>The domain doesn't exist or is misspelled</li>
+                                        <li>Your internet connection is not working</li>
+                                        <li>Your DNS server is not responding</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </body>
+                        </html>
+                        """
+                    }
+                
+                # General connection error
                 return {
                     "success": False,
                     "error": error_message,

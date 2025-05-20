@@ -10,6 +10,7 @@ interface BrowserProps {
 const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingUrl, setLoadingUrl] = useState('');
   const [error, setError] = useState<string | null>(null);
   const browserFrameRef = useRef<HTMLDivElement>(null);
 
@@ -76,12 +77,66 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
     }
   }, [backend, uicontrol]);
 
+  // Create a function to listen for loading state events from Python
+  useEffect(() => {
+    // Define the event handler function
+    const handleLoadingStateChange = (event: CustomEvent) => {
+      const { isLoading, url, success } = event.detail;
+      console.log(`Browser component received loading state: ${isLoading ? 'loading' : 'done'} for ${url}`);
+      
+      if (isLoading) {
+        setLoading(true);
+        setLoadingUrl(url);
+      } else {
+        setLoading(false);
+        if (!success) {
+          setError(`Failed to load: ${url}`);
+        }
+      }
+    };
+    
+    // Add event listener for our custom browser loading state event
+    window.addEventListener('browserLoadingStateChanged', handleLoadingStateChange as EventListener);
+    
+    // Clean up event listener when component unmounts
+    return () => {
+      window.removeEventListener('browserLoadingStateChanged', handleLoadingStateChange as EventListener);
+    };
+  }, []);
+
+  // Create a function to listen for page load events
+  const setupPageLoadListeners = () => {
+    if (!uicontrol) return;
+
+    // Attach a listener to browser load events
+    const handleLoadStart = () => {
+      setLoading(true);
+    };
+
+    const handleLoadEnd = (success: boolean) => {
+      setLoading(false);
+      if (!success) {
+        setError(`Failed to load: ${loadingUrl}`);
+      }
+    };
+
+    // TODO: If there's a way to listen to browser load events from Python
+    // we would implement that here
+  };
+
+  // Call the setup function when the component mounts
+  useEffect(() => {
+    setupPageLoadListeners();
+  }, [uicontrol]);
+
+  // Handle URL navigation
   const handleGoClick = async () => {
     if (!url) return;
     
     // Clear any previous errors
     setError(null);
     setLoading(true);
+    setLoadingUrl(url);
     
     try {
       // Choose the appropriate control object for UI interactions
@@ -113,19 +168,18 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
           console.error('Error logging navigation:', e);
         }
       }
+      
+      // Set a timeout to automatically clear the loading state
+      // in case we don't get a proper response from the backend
+      setTimeout(() => {
+        setLoading(false);
+      }, 15000); // 15 seconds timeout
     } catch (error) {
       console.error('Error navigating to URL:', error);
       setError(`Failed to navigate: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
       setLoading(false);
     }
   };
-
-  // const handleKeyPress = (e: React.KeyboardEvent) => {
-  //   if (e.key === 'Enter') {
-  //     handleGoClick();
-  //   }
-  // };
 
   return (
     <div className="browser-container">
@@ -154,7 +208,17 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
         </div>
       )}
       
-      <div className="browser-frame" ref={browserFrameRef}></div>
+      <div className="browser-frame" ref={browserFrameRef}>
+        {loading && (
+          <div className="browser-loading-overlay">
+            <div className="browser-spinner"></div>
+            <h3>Loading...</h3>
+            <div className="loading-url">
+              {loadingUrl}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

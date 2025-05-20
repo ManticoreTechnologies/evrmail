@@ -41,6 +41,12 @@ class BackendBridge(QObject):
                 self._show_error_page("Empty URL", "Please enter a valid URL.")
                 return
             
+            # Signal loading state to the UI
+            self._signal_loading_state(True, url)
+            
+            # Show loading indicator first
+            self._show_loading_page(url)
+            
             # Special handling for EVR domains
             if url.endswith(".evr"):
                 # Process EVR domain URLs
@@ -52,8 +58,11 @@ class BackendBridge(QObject):
                     error_msg = processed_url.get('error', 'Unknown error')
                     print(f"Error processing EVR URL: {error_msg}")
                     
+                    # Signal loading finished to the UI
+                    self._signal_loading_state(False, url, success=False)
+                    
                     # Display a generic error page
-                    self._show_error_page("Error Processing EVR Domain", error_msg)
+                    self._show_error_page("Error Processing EVR Domain", error_msg, domain=url)
                 else:
                     # Normal case - use the processed URL
                     main_window.browser_view.setUrl(QUrl(processed_url))
@@ -70,26 +79,178 @@ class BackendBridge(QObject):
                 main_window.browser_view.show()
         except Exception as e:
             print(f"Error navigating to URL: {str(e)}")
-            self._show_error_page("Navigation Error", f"An error occurred: {str(e)}")
+            # Signal loading error to UI
+            self._signal_loading_state(False, url, success=False)
+            self._show_error_page("Navigation Error", f"An error occurred: {str(e)}", domain=url)
     
-    def _show_error_page(self, title, message):
+    def _signal_loading_state(self, is_loading, url="", success=True):
+        """Signal loading state to the UI via JavaScript"""
+        try:
+            script = f"""
+            if (window.updateBrowserLoadingState) {{
+                window.updateBrowserLoadingState({str(is_loading).lower()}, "{url}", {str(success).lower()});
+            }}
+            """
+            main_window.ui_view.page().runJavaScript(script)
+        except Exception as e:
+            print(f"Error signaling loading state: {e}")
+    
+    def _show_loading_page(self, url):
+        """Display a loading indicator while the page is being loaded"""
+        domain = url.split("://")[-1].split("/")[0] if "://" in url else url.split("/")[0]
+        loading_html = f"""
+        <html>
+        <head>
+            <title>Loading {domain}...</title>
+            <style>
+                body {{
+                    font-family: Arial, sans-serif;
+                    background-color: #f5f5f5;
+                    margin: 0;
+                    padding: 0;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    height: 100vh;
+                    color: #333;
+                }}
+                .loading-container {{
+                    text-align: center;
+                    padding: 30px;
+                    background: white;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    max-width: 80%;
+                }}
+                h2 {{
+                    margin-bottom: 20px;
+                    color: #2c3e50;
+                }}
+                .spinner {{
+                    display: inline-block;
+                    width: 50px;
+                    height: 50px;
+                    border: 5px solid rgba(0,0,0,0.1);
+                    border-radius: 50%;
+                    border-top-color: #3498db;
+                    animation: spin 1s ease-in-out infinite;
+                    margin-bottom: 20px;
+                }}
+                @keyframes spin {{
+                    to {{ transform: rotate(360deg); }}
+                }}
+                .url {{
+                    color: #3498db;
+                    word-break: break-all;
+                    font-size: 16px;
+                    margin-top: 15px;
+                    padding: 10px;
+                    background: #f8f9fa;
+                    border-radius: 4px;
+                    display: inline-block;
+                }}
+            </style>
+        </head>
+        <body>
+            <div class="loading-container">
+                <div class="spinner"></div>
+                <h2>Loading...</h2>
+                <div class="url">{url}</div>
+            </div>
+        </body>
+        </html>
+        """
+        main_window.browser_view.setHtml(loading_html)
+        main_window.browser_view.show()
+    
+    def _show_error_page(self, title, message, domain=None):
         """Display a simple error page in the browser view"""
+        domain_info = f"<div class='domain'>Address: <span>{domain}</span></div>" if domain else ""
+        suggestions = """
+        <div class='suggestions'>
+            <h3>Suggestions:</h3>
+            <ul>
+                <li>Check that the domain name is spelled correctly</li>
+                <li>Make sure your internet connection is working</li>
+                <li>Try visiting a popular website like <a href='https://google.com'>Google</a></li>
+            </ul>
+        </div>
+        """
+        
         error_html = f"""
         <html>
         <head>
             <title>{title}</title>
             <style>
-                body {{ font-family: Arial, sans-serif; padding: 20px; text-align: center; }}
-                .error-container {{ max-width: 600px; margin: 100px auto; padding: 20px; 
-                                   border: 1px solid #ddd; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }}
-                h1 {{ color: #e74c3c; }}
-                p {{ color: #333; line-height: 1.6; }}
+                body {{
+                    font-family: Arial, sans-serif;
+                    padding: 20px;
+                    text-align: center;
+                    background-color: #f5f5f5;
+                    margin: 0;
+                }}
+                .error-container {{
+                    max-width: 600px;
+                    margin: 50px auto;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                    background-color: white;
+                }}
+                h1 {{
+                    color: #e74c3c;
+                    margin-bottom: 20px;
+                }}
+                p {{
+                    color: #333;
+                    line-height: 1.6;
+                    font-size: 16px;
+                }}
+                .domain {{
+                    margin: 20px 0;
+                    padding: 10px;
+                    background-color: #f8f9fa;
+                    border-radius: 4px;
+                    color: #666;
+                }}
+                .domain span {{
+                    color: #2980b9;
+                    font-weight: bold;
+                    word-break: break-all;
+                }}
+                .suggestions {{
+                    text-align: left;
+                    margin-top: 30px;
+                    padding-top: 20px;
+                    border-top: 1px solid #eee;
+                }}
+                .suggestions h3 {{
+                    color: #2c3e50;
+                    margin-bottom: 15px;
+                }}
+                .suggestions ul {{
+                    margin: 0;
+                    padding-left: 20px;
+                }}
+                .suggestions li {{
+                    margin-bottom: 10px;
+                    color: #555;
+                }}
+                a {{
+                    color: #3498db;
+                    text-decoration: none;
+                }}
+                a:hover {{
+                    text-decoration: underline;
+                }}
             </style>
         </head>
         <body>
             <div class="error-container">
                 <h1>{title}</h1>
                 <p>{message}</p>
+                {domain_info}
+                {suggestions}
             </div>
         </body>
         </html>
@@ -157,6 +318,10 @@ class MainWindow(QMainWindow):
         self.browser_view = QWebEngineView(self)
         self.browser_view.hide()  # Initially hidden
         self.browser_view.last_geometry = QRect(0, 0, 0, 0)  # Initialize with empty geometry
+        
+        # Connect load status signals to track page loading
+        self.browser_view.loadStarted.connect(self.on_page_load_started)
+        self.browser_view.loadFinished.connect(self.on_page_load_finished)
 
         # WebChannel bridge
         self.channel = QWebChannel()
@@ -214,6 +379,33 @@ class MainWindow(QMainWindow):
             
             print(f"Loading UI from: {dist_path}")
             self.ui_view.setUrl(QUrl.fromLocalFile(os.path.abspath(dist_path)))
+
+    def on_page_load_started(self):
+        """Called when a page starts loading"""
+        print("[Browser] Page loading started")
+        url = self.browser_view.url().toString()
+        # Signal loading state to the UI
+        self.ui_bridge._signal_loading_state(True, url)
+
+    def on_page_load_finished(self, success):
+        """Called when a page finishes loading, whether successful or not"""
+        url = self.browser_view.url().toString()
+        if success:
+            print(f"[Browser] Page loaded successfully: {url}")
+            # Signal loading state to the UI
+            self.ui_bridge._signal_loading_state(False, url, success=True)
+        else:
+            print(f"[Browser] Page failed to load: {url}")
+            # Signal loading state to the UI
+            self.ui_bridge._signal_loading_state(False, url, success=False)
+            # Show a custom error page if the load failed
+            # but only if we're still on the same URL (user didn't navigate away)
+            if url not in ["about:blank", ""]:
+                self.ui_bridge._show_error_page(
+                    "Page Failed to Load",
+                    "The requested web page failed to load. This could be due to network issues or the site may be unavailable.",
+                    domain=url
+                )
 
 def main(path=None, nodejs=False, argv=None):
     """
