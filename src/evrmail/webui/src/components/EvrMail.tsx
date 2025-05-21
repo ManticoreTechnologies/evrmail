@@ -12,6 +12,7 @@ import type { Message } from '../types/message';
 
 interface EvrMailProps {
   backend: Backend | null;
+  onSwitchToBrowser?: () => void;
 }
 
 // Active view in the EvrMail component
@@ -41,7 +42,7 @@ interface WalletBalance {
   assets: Record<string, Record<string, number>>;
 }
 
-const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
+const EvrMail: React.FC<EvrMailProps> = ({ backend, onSwitchToBrowser }) => {
   const [appVersion, setAppVersion] = useState<string | null>(null);
   const [networkStatus, setNetworkStatus] = useState<any>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -345,6 +346,30 @@ const EvrMail: React.FC<EvrMailProps> = ({ backend }) => {
         return (
           <Dashboard 
             backend={backend}
+            onNavigate={(view, params) => {
+              if (view === 'browser') {
+                // Handle browser tab at App level if onSwitchToBrowser is available
+                if (onSwitchToBrowser) {
+                  onSwitchToBrowser();
+                }
+                // Fall back to directly calling backend.openTab if necessary
+                else if (backend && typeof backend.openTab === 'function') {
+                  backend.openTab('browser');
+                }
+              } else {
+                // Handle internal navigation
+                setActiveView(view as EvrMailView);
+                
+                // Handle additional parameters
+                if (view === 'inbox' && params?.selectedMessageId) {
+                  // Find the selected message by ID
+                  const message = messages.find(msg => msg.id === params.selectedMessageId);
+                  if (message) {
+                    setSelectedMessage(message);
+                  }
+                }
+              }
+            }}
           />
         );
       case 'inbox':

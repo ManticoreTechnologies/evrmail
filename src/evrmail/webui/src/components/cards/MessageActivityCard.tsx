@@ -13,9 +13,10 @@ interface Message {
 interface MessageActivityCardProps {
   messages: Message[];
   backend: Backend | null;
+  onNavigate: (view: string, params?: any) => void;
 }
 
-const MessageActivityCard: React.FC<MessageActivityCardProps> = ({ messages, backend }) => {
+const MessageActivityCard: React.FC<MessageActivityCardProps> = ({ messages, backend, onNavigate }) => {
   const formatDate = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
     const now = new Date();
@@ -36,9 +37,8 @@ const MessageActivityCard: React.FC<MessageActivityCardProps> = ({ messages, bac
       // Mark the message as read
       await callBackend(backend, 'mark_message_read', messageId);
       
-      // Here you would typically navigate to the message detail view
-      // or open it in a modal, etc.
-      console.log(`Message ${messageId} marked as read`);
+      // Navigate to inbox with this message selected
+      onNavigate('inbox', { selectedMessageId: messageId });
     } catch (err) {
       console.error('Error marking message as read:', err);
     }
@@ -73,7 +73,12 @@ const MessageActivityCard: React.FC<MessageActivityCardProps> = ({ messages, bac
         )}
       </div>
       <div className="dashboard-card-footer">
-        <button className="view-all-button">View All Messages</button>
+        <button 
+          className="view-all-button"
+          onClick={() => onNavigate('inbox')}
+        >
+          View All Messages
+        </button>
       </div>
     </div>
   );

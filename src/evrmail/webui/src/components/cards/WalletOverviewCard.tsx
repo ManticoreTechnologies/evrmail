@@ -14,10 +14,11 @@ interface WalletOverviewCardProps {
     }>;
   } | null;
   backend: Backend | null;
+  onNavigate: (view: string, params?: any) => void;
 }
 
 // @ts-ignore
-const WalletOverviewCard: React.FC<WalletOverviewCardProps> = ({ walletData, backend }) => {
+const WalletOverviewCard: React.FC<WalletOverviewCardProps> = ({ walletData, backend, onNavigate }) => {
   // Format EVR amount to 8 decimal places
   const formatEVR = (amount: number) => {
     return amount.toFixed(8);
@@ -85,7 +86,12 @@ const WalletOverviewCard: React.FC<WalletOverviewCardProps> = ({ walletData, bac
         </div>
       </div>
       <div className="dashboard-card-footer">
-        <button className="view-wallet-button">Manage Wallet</button>
+        <button 
+          className="view-wallet-button"
+          onClick={() => onNavigate('wallet')}
+        >
+          Manage Wallet
+        </button>
       </div>
     </div>
   );

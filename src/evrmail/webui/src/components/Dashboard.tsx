@@ -11,9 +11,10 @@ import { getFromBackend, getNetworkStatus, getWalletBalances, getMessages } from
 
 interface DashboardProps {
   backend: Backend | null;
+  onNavigate?: (view: string, params?: any) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ backend }) => {
+const Dashboard: React.FC<DashboardProps> = ({ backend, onNavigate }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<any>(null);
@@ -125,6 +126,13 @@ const Dashboard: React.FC<DashboardProps> = ({ backend }) => {
     );
   }
   
+  // Helper function to handle navigation
+  const handleNavigate = (view: string, params?: any) => {
+    if (onNavigate) {
+      onNavigate(view, params);
+    }
+  };
+  
   return (
     <div className="dashboard-container">
       <div className="dashboard-row three-columns">
@@ -135,6 +143,7 @@ const Dashboard: React.FC<DashboardProps> = ({ backend }) => {
         <MessageActivityCard 
           messages={messages}
           backend={backend}
+          onNavigate={handleNavigate}
         />
         <NetworkStatusCard 
           networkStatus={networkStatus}
@@ -145,6 +154,7 @@ const Dashboard: React.FC<DashboardProps> = ({ backend }) => {
         <WalletOverviewCard 
           walletData={walletData}
           backend={backend}
+          onNavigate={handleNavigate}
         />
       </div>
       
@@ -152,13 +162,17 @@ const Dashboard: React.FC<DashboardProps> = ({ backend }) => {
         <ContactsCard 
           contacts={contacts}
           backend={backend}
+          onNavigate={handleNavigate}
         />
         <RecentActionsCard 
           actions={recentActions}
         />
       </div>
       
-      <QuickActionsRow backend={backend} />
+      <QuickActionsRow 
+        backend={backend} 
+        onNavigate={handleNavigate}
+      />
     </div>
   );
 };

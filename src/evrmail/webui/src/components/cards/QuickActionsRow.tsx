@@ -2,9 +2,10 @@ import React from 'react';
 
 interface QuickActionsRowProps {
   backend: Backend | null;
+  onNavigate: (view: string, params?: any) => void;
 }
 
-const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
+const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend, onNavigate }) => {
   // Define the available quick actions
   const quickActions = [
     {
@@ -13,7 +14,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
       icon: '✉️',
       action: () => {
         console.log('Compose message clicked');
-        // Navigate to compose view or open compose modal
+        onNavigate('compose');
       }
     },
     {
@@ -22,7 +23,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
       icon: '👤',
       action: () => {
         console.log('Add contact clicked');
-        // Navigate to contacts view or open add contact modal
+        onNavigate('contacts');
       }
     },
     {
@@ -31,6 +32,9 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
       icon: '📥',
       action: async () => {
         if (!backend) return;
+        
+        // First navigate to wallet view
+        onNavigate('wallet');
         
         try {
           const result = await backend.generate_receive_address();
@@ -47,7 +51,7 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
       icon: '💸',
       action: () => {
         console.log('Send EVR clicked');
-        // Navigate to send view or open send modal
+        onNavigate('wallet');
       }
     },
     {
@@ -55,10 +59,8 @@ const QuickActionsRow: React.FC<QuickActionsRowProps> = ({ backend }) => {
       label: 'Browse .evr',
       icon: '🌐',
       action: () => {
-        // This would typically switch to the browser tab
-        if (backend && backend.openTab) {
-          backend.openTab('browser');
-        }
+        console.log('Browser clicked');
+        onNavigate('browser');
       }
     }
   ];

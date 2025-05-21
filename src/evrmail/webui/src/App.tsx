@@ -255,7 +255,10 @@ function App() {
       </div>
 
       {activeTab === 'mail' ? (
-        <EvrMail backend={backend} />
+        <EvrMail 
+          backend={backend}
+          onSwitchToBrowser={() => handleTabSwitch('browser')}
+        />
       ) : (
         <Browser backend={backend} uicontrol={uicontrol} />
       )}

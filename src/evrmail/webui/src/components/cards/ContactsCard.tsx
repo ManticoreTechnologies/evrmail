@@ -7,9 +7,10 @@ interface ContactsCardProps {
     pubkey?: string;
   }> | null;
   backend: Backend | null;
+  onNavigate: (view: string, params?: any) => void;
 }
 
-const ContactsCard: React.FC<ContactsCardProps> = ({ contacts, backend }) => {
+const ContactsCard: React.FC<ContactsCardProps> = ({ contacts, backend, onNavigate }) => {
   // Get the first letter of a name for the avatar
   const getInitial = (name: string) => {
     return (name || '?').charAt(0).toUpperCase();
@@ -69,7 +70,12 @@ const ContactsCard: React.FC<ContactsCardProps> = ({ contacts, backend }) => {
         )}
       </div>
       <div className="dashboard-card-footer">
-        <button className="add-contact-button">Add Contact</button>
+        <button 
+          className="add-contact-button"
+          onClick={() => onNavigate('contacts')}
+        >
+          Add Contact
+        </button>
       </div>
     </div>
   );
