@@ -136,7 +136,19 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
     // Clear any previous errors
     setError(null);
     setLoading(true);
-    setLoadingUrl(url);
+    
+    // Store the potentially processed URL
+    let processedUrl = url;
+    
+    // For non-EVR domains, ensure URL has a protocol prefix in the UI display
+    if (!url.endsWith('.evr') && !url.startsWith('http://') && !url.startsWith('https://') && 
+        !url.startsWith('file://') && !url.startsWith('ftp://')) {
+      processedUrl = `https://${url}`;
+      // Update the URL in the input field for user feedback
+      setUrl(processedUrl);
+    }
+    
+    setLoadingUrl(processedUrl);
     
     try {
       // Choose the appropriate control object for UI interactions
@@ -154,13 +166,13 @@ const Browser: React.FC<BrowserProps> = ({ backend, uicontrol }) => {
       updateFramePosition();
       
       // Then navigate to the URL
-      control.load_url(url);
+      control.load_url(processedUrl);
       
       // If we have the backend, also log the navigation 
       if (backend) {
         try {
           if (typeof backend.navigate_browser === 'function') {
-            await callBackend(backend, 'navigate_browser', url);
+            await callBackend(backend, 'navigate_browser', processedUrl);
           } else {
             console.warn('navigate_browser function not available');
           }

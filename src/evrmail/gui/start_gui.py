@@ -33,6 +33,7 @@ class BackendBridge(QObject):
     @pyqtSlot(str)
     def load_url(self, url):
         from .functions import get_evr_url
+        
         # Process URL to handle IPFS/IPNS and add https:// if needed
         if url.endswith(".evr"):
             # remove https:// from the url
@@ -55,6 +56,11 @@ class BackendBridge(QObject):
                 main_window.browser_view.setUrl(QUrl(processed_url))
                 main_window.browser_view.show()
         else:
+            # For non-EVR domains, ensure URL has a protocol prefix
+            if not url.startswith(('http://', 'https://', 'file://', 'ftp://')):
+                # Add https:// prefix for domains without a protocol
+                url = "https://" + url
+                
             print(f"[JS → Python] Load URL: {url}")
             main_window.browser_view.setUrl(QUrl(url))
             main_window.browser_view.show()
@@ -92,6 +98,70 @@ class BackendBridge(QObject):
         if main_window.browser_view.isVisible():
             main_window.browser_view.setGeometry(geometry)
             main_window.browser_view.show()
+            
+    @pyqtSlot(bool, str, bool)
+    def _signal_loading_state(self, is_loading, url, success=True):
+        """Signal loading state to the JavaScript frontend"""
+        try:
+            # Get the JavaScript window object
+            page = main_window.ui_view.page()
+            # Call the updateBrowserLoadingState function
+            script = f"window.updateBrowserLoadingState({str(is_loading).lower()}, '{url}', {str(success).lower()})"
+            page.runJavaScript(script)
+            print(f"[Python → JS] Signaled loading state: {is_loading} for {url} (success: {success})")
+        except Exception as e:
+            print(f"Error signaling loading state to frontend: {e}")
+            
+    @pyqtSlot(str, str, str)
+    def _show_error_page(self, title, message, domain=""):
+        """Show an error page in the browser view"""
+        try:
+            error_html = f"""
+            <html>
+                <head>
+                    <title>Error - {title}</title>
+                    <style>
+                        body {{ 
+                            font-family: Arial, sans-serif; 
+                            background-color: #f8f9fa; 
+                            color: #333;
+                            text-align: center;
+                            padding: 50px;
+                            max-width: 800px;
+                            margin: 0 auto;
+                        }}
+                        .error-container {{
+                            background-color: white;
+                            border-radius: 8px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            padding: 30px;
+                        }}
+                        h1 {{ color: #e74c3c; }}
+                        .domain {{ 
+                            color: #3498db;
+                            word-break: break-all;
+                            margin: 20px 0;
+                            padding: 10px;
+                            background: #f5f5f5;
+                            border-radius: 4px; 
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="error-container">
+                        <h1>{title}</h1>
+                        <p>{message}</p>
+                        {f'<div class="domain">{domain}</div>' if domain else ''}
+                        <p>Please check your connection and try again.</p>
+                    </div>
+                </body>
+            </html>
+            """
+            # Use QUrl.fromLocalFile with a temporary file, or more simply
+            # use QUrl.fromUserInput which can handle data URLs
+            main_window.browser_view.setHtml(error_html, QUrl())
+        except Exception as e:
+            print(f"Error showing error page: {e}")
 
 class MainWindow(QMainWindow):
     def __init__(self, path=None, nodejs=False):
