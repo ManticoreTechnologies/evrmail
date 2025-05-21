@@ -5,6 +5,38 @@
   padding: 0;
 }
 
+:root {
+  /* Primary Colors */
+  --primary-color: #5c2b8a;
+  --primary-light: #7e3dbb;
+  --primary-dark: #461e6f;
+  
+  /* Accent Colors */
+  --accent-color: #3498db;
+  --accent-light: #5dade2;
+  --accent-dark: #2980b9;
+  
+  /* Neutral Colors */
+  --background: #f9fafb;
+  --card-bg: #ffffff;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999999;
+  
+  /* Status Colors */
+  --success: #2ecc71;
+  --warning: #f39c12;
+  --error: #e74c3c;
+  --info: #3498db;
+
+  /* App-specific colors */
+  --header-bg: #2c3e50;
+  --header-text: #ecf0f1;
+  --tab-active: #34495e;
+  --tab-hover: #2c3e50;
+  --tab-indicator: #3498db;
+}
+
 /* Main application styling */
 .app {
   display: flex;
@@ -12,33 +44,50 @@
   height: 100vh;
   width: 100vw;
   overflow: hidden;
-  background: #121212;
-  color: #fff;
-  font-family: sans-serif;
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .tabs {
   display: flex;
-  background-color: #1a2530;
-  border-bottom: 1px solid #34495e;
+  background-color: var(--header-bg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 10;
 }
 
 .tab {
-  padding: 15px 25px;
-  color: #ecf0f1;
+  padding: 18px 25px;
+  color: var(--header-text);
   cursor: pointer;
   font-size: 16px;
   transition: background-color 0.2s;
+  position: relative;
+  opacity: 0.8;
+  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 .tab:hover {
-  background-color: #34495e;
+  background-color: var(--tab-hover);
+  opacity: 1;
 }
 
 .tab.active {
-  background-color: #2c3e50;
-  border-bottom: 3px solid #3498db;
-  font-weight: 500;
+  background-color: var(--tab-active);
+  opacity: 1;
+  font-weight: 600;
+}
+
+.tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background-color: var(--tab-indicator);
 }
 
 /* Loading screen */
@@ -48,73 +97,194 @@
   justify-content: center;
   height: 100vh;
   width: 100vw;
-  background-color: #1a2530;
-  color: #ecf0f1;
+  background-color: var(--header-bg);
+  color: var(--header-text);
+  background-image: 
+    radial-gradient(circle at 20% 30%, rgba(92, 43, 138, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, rgba(52, 152, 219, 0.1) 0%, transparent 40%);
 }
 
 .loading-message {
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
+  padding: 40px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(5px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 .loading-icon {
-  font-size: 60px;
+  font-size: 70px;
   margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
 }
 
 .loading-message h1 {
-  font-size: 28px;
-  margin: 0 0 12px 0;
+  font-size: 32px;
+  margin: 0 0 16px 0;
+  background: linear-gradient(135deg, #ecf0f1, #bdc3c7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
 
 .loading-message p {
   font-size: 16px;
-  opacity: 0.7;
+  opacity: 0.9;
+  margin-bottom: 10px;
 }
 
 /* Error message styling */
 .error-message {
   text-align: center;
   animation: fadeIn 0.5s ease-in-out;
-  background-color: rgba(231, 76, 60, 0.1);
-  padding: 20px;
-  border-radius: 8px;
+  background-color: rgba(231, 76, 60, 0.15);
+  padding: 30px;
+  border-radius: 12px;
   border: 1px solid rgba(231, 76, 60, 0.3);
   margin: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
 }
 
 .error-icon {
-  font-size: 60px;
+  font-size: 70px;
   margin-bottom: 20px;
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-10px); }
+  40%, 80% { transform: translateX(10px); }
 }
 
 .error-message h1 {
   font-size: 28px;
-  margin: 0 0 12px 0;
-  color: #e74c3c;
+  margin: 0 0 16px 0;
+  color: var(--error);
 }
 
 .error-message p {
   font-size: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 
 .error-message button {
-  background-color: #3498db;
+  background-color: var(--accent-color);
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: 12px 30px;
+  border-radius: 6px;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  box-shadow: 0 4px 6px rgba(52, 152, 219, 0.2);
 }
 
 .error-message button:hover {
-  background-color: #2980b9;
+  background-color: var(--accent-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 8px rgba(52, 152, 219, 0.25);
+}
+
+.error-message button:active {
+  transform: translateY(0);
 }
 
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #121212;
+    --card-bg: #1e1e1e;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #909090;
+    --header-bg: #1a1a1a;
+    --header-text: #f5f5f5;
+    --tab-active: #2a2a2a;
+    --tab-hover: #252525;
+  }
+  
+  .loading-container {
+    background-color: #121212;
+    background-image: 
+      radial-gradient(circle at 20% 30%, rgba(92, 43, 138, 0.25) 0%, transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(52, 152, 219, 0.2) 0%, transparent 40%);
+  }
+  
+  .loading-message {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+  
+  .loading-message h1 {
+    background: linear-gradient(135deg, #f5f5f5, #d0d0d0);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  .error-message {
+    background-color: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.2);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tab {
+    padding: 15px 20px;
+    font-size: 14px;
+  }
+  
+  .loading-message {
+    padding: 30px;
+  }
+  
+  .loading-icon {
+    font-size: 60px;
+  }
+  
+  .loading-message h1 {
+    font-size: 28px;
+  }
+  
+  .error-icon {
+    font-size: 60px;
+  }
+  
+  .error-message h1 {
+    font-size: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tab {
+    padding: 12px 15px;
+    font-size: 13px;
+  }
+  
+  .loading-message {
+    padding: 25px;
+  }
+  
+  .loading-icon {
+    font-size: 50px;
+  }
+  
+  .loading-message h1 {
+    font-size: 24px;
+  }
 } 
