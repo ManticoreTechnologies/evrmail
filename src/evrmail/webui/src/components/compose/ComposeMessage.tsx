@@ -240,13 +240,15 @@ const ComposeMessage: React.FC<ComposeMessageProps> = ({
   };
   
   return (
-    <div className="compose-container" style={{ width: '100%' }}>
+    <div className="compose-container">
       {isSending && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
+          <p>Sending message...</p>
         </div>
       )}
       
+      {/* This is hidden in CSS to match the screenshot */}
       <div className="compose-header">
         <h2 className="compose-title">Compose New Message</h2>
         <p className="compose-subtitle">Send a new encrypted message over the Evrmore blockchain</p>
@@ -254,13 +256,15 @@ const ComposeMessage: React.FC<ComposeMessageProps> = ({
       
       {status && (
         <div className={`status-message ${status.type}`}>
+          {status.type === 'success' && <span role="img" aria-label="success">✅ </span>}
+          {status.type === 'error' && <span role="img" aria-label="error">❌ </span>}
           {status.message}
         </div>
       )}
       
       <div className="compose-form">
         <div className="form-group">
-          <label className="form-label" htmlFor="recipient">To:</label>
+          <label className="form-label" htmlFor="recipient">Recipient:</label>
           <div className="recipient-field">
             <input
               type="text"
@@ -268,15 +272,17 @@ const ComposeMessage: React.FC<ComposeMessageProps> = ({
               className="form-input"
               value={recipient}
               onChange={(e) => setRecipient(e.target.value)}
-              placeholder="Enter recipient EVR address or contact name"
+              placeholder="Enter EVR address or select from contacts"
               autoComplete="off"
             />
-            <div 
+            <button
+              type="button" 
               className="contact-list-button"
               onClick={() => setShowContactsDropdown(!showContactsDropdown)}
+              title="Browse contacts"
             >
-              👤
-            </div>
+              <span role="img" aria-label="contacts">👤</span>
+            </button>
           </div>
           
           {showContactsDropdown && (
@@ -315,12 +321,7 @@ const ComposeMessage: React.FC<ComposeMessageProps> = ({
           />
         </div>
         
-        <div className="form-group" style={{ 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
-          minHeight: windowHeight < 700 ? '150px' : '300px' 
-        }}>
+        <div className="form-message-container">
           <label className="form-label" htmlFor="message">Message:</label>
           <textarea
             id="message"
@@ -366,27 +367,31 @@ const ComposeMessage: React.FC<ComposeMessageProps> = ({
                 ))}
               </select>
               <p className="outbox-info">
-                The message will be sent using the selected asset. 
+                <span role="img" aria-label="info">ℹ️</span> The message will be sent using the selected asset. 
                 Make sure the asset has enough units (min 576).
               </p>
             </div>
           )}
         </div>
         
-        <div className="form-actions">
-          <button 
-            className="btn btn-secondary"
-            onClick={handleCancel}
-          >
-            Cancel
-          </button>
-          <button
-            className="btn btn-primary"
-            disabled={isSending || !recipient || !subject || !messageContent || (customOutbox && !selectedOutbox)}
-            onClick={handleSendMessage}
-          >
-            {isSending ? 'Sending...' : 'Send Message'}
-          </button>
+        <div className="form-actions-wrapper">
+          <div className="form-actions">
+            <button 
+              className="btn btn-secondary"
+              onClick={handleCancel}
+              type="button"
+            >
+              Cancel
+            </button>
+            <button
+              className="btn btn-primary"
+              disabled={isSending || !recipient || !subject || !messageContent || (customOutbox && !selectedOutbox)}
+              onClick={handleSendMessage}
+              type="button"
+            >
+              Send Message
+            </button>
+          </div>
         </div>
       </div>
     </div>
