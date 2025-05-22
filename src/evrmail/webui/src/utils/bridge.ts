@@ -225,4 +225,38 @@ export async function createNewWallet(
   passphrase: string = ''
 ): Promise<{success: boolean; name?: string; mnemonic?: string; error?: string; message?: string}> {
   return callBackend(backend, 'create_new_wallet', name, passphrase);
+}
+
+/**
+ * Helper for signing messages with a wallet address
+ */
+export async function signMessage(
+  backend: Backend | null,
+  address: string,
+  message: string
+): Promise<{success: boolean; signature?: string; error?: string}> {
+  return callBackend<{success: boolean; signature?: string; error?: string}>(
+    backend as any, 
+    'sign_message' as any, 
+    address, 
+    message
+  );
+}
+
+/**
+ * Helper for verifying message signatures
+ */
+export async function verifyMessage(
+  backend: Backend | null,
+  address: string,
+  signature: string,
+  message: string
+): Promise<{valid: boolean; error?: string}> {
+  return callBackend<{valid: boolean; error?: string}>(
+    backend as any, 
+    'verify_message' as any, 
+    address, 
+    signature,
+    message
+  );
 } 

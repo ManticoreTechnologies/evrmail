@@ -752,4 +752,161 @@
 
 .new-wallet-button:hover {
   background-color: #5a4693;
+}
+
+/* Sign Message Section */
+.sign-message-section {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.sign-message-form {
+  margin-top: 20px;
+}
+
+.full-width-input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.section-description {
+  margin-bottom: 20px;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.signature-display {
+  margin-top: 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  background-color: #f9f9f9;
+}
+
+.signature-display label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.signature-box {
+  display: flex;
+  align-items: center;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 10px;
+  overflow-x: auto;
+}
+
+.signature-box code {
+  flex: 1;
+  word-break: break-all;
+  font-family: monospace;
+  font-size: 0.85rem;
+}
+
+.copy-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 5px 10px;
+  margin-left: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.copy-button:hover {
+  background-color: #2980b9;
+}
+
+.sign-button {
+  background-color: #2ecc71;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  width: 100%;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.sign-button:hover {
+  background-color: #27ae60;
+}
+
+.sign-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+/* Verification Section */
+.verify-section-toggle {
+  margin-top: 30px;
+  text-align: center;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.toggle-verify-button {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.toggle-verify-button:hover {
+  background-color: #2980b9;
+}
+
+.verify-message-section {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.verify-message-section h3 {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.verify-message-form {
+  margin-top: 20px;
+}
+
+.verify-button {
+  background-color: #f39c12;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 15px;
+  width: 100%;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 15px;
+}
+
+.verify-button:hover {
+  background-color: #d35400;
+}
+
+.verify-button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
 } 

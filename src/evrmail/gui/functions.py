@@ -11,7 +11,7 @@ from datetime import datetime
 from PyQt5.QtCore import QObject, pyqtSlot, pyqtSignal
 
 # Core imports from the original Flet implementation
-from evrmail.wallet.utils import calculate_balances, load_all_wallet_keys
+from evrmail.wallet.utils import calculate_balances, load_all_wallet_keys, get_private_key_for_address
 from evrmail.wallet.addresses import get_all_addresses
 from evrmail.wallet.store import list_wallets
 from evrmail.commands.send.send_msg import send_msg_core, send_contact_request_core
@@ -400,7 +400,7 @@ class WebUIBridge(QObject):
 
     @pyqtSlot(str, str, result=str)
     def create_new_wallet(self, name="", passphrase=""):
-        """Create a new wallet with an optional name and passphrase"""
+        """Create a new wallet"""
         try:
             result = _create_new_wallet_impl(name, passphrase)
             return json.dumps(result)
@@ -410,78 +410,90 @@ class WebUIBridge(QObject):
                 "success": False,
                 "error": str(e)
             })
+            
+    @pyqtSlot(str, str, result=str)
+    def sign_message(self, address, message):
+        """Sign a message with a wallet address"""
+        try:
+            result = _sign_message_impl(address, message)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in sign_message bridge: {str(e)}")
+            return json.dumps({
+                "success": False,
+                "error": str(e)
+            })
+            
+    @pyqtSlot(str, str, str, result=str)
+    def verify_message(self, address, signature, message):
+        """Verify a message signature"""
+        try:
+            result = _verify_message_impl(address, signature, message)
+            return json.dumps(result)
+        except Exception as e:
+            gui_log("error", f"Error in verify_message bridge: {str(e)}")
+            return json.dumps({
+                "valid": False,
+                "error": str(e)
+            })
 
 # Implementation functions that the bridge class calls
 # These use the original code but are renamed to avoid conflicts
 
 def _get_log_entries_impl(level="all", categories=None, filter_text=None):
     """Implementation of get_log_entries"""
-    # Use the original implementation
     return get_log_entries(level, categories, filter_text)
 
 def _get_settings_impl():
     """Implementation of get_settings"""
-    # Use the original implementation
     return get_settings()
 
 def _save_settings_impl(settings):
     """Implementation of save_settings"""
-    # Use the original implementation
     return save_settings(settings)
 
 def _get_wallet_balances_impl():
     """Implementation of get_wallet_balances"""
-    # Use the original implementation
     return get_wallet_balances()
 
 def _get_wallet_addresses_impl():
     """Implementation of get_wallet_addresses"""
-    # Use the original implementation
     return get_wallet_addresses()
 
 def _get_wallet_list_impl():
     """Implementation of get_wallet_list"""
-    # Use the original implementation
     return get_wallet_list()
 
 def _get_utxos_impl():
     """Implementation of get_utxos"""
-    # Use the original implementation
     return get_utxos()
 
 def _get_inbox_messages_impl():
     """Implementation of get_inbox_messages"""
-    # Use the original implementation
     return get_inbox_messages()
 
 def _get_sent_messages_impl():
     """Implementation of get_sent_messages"""
-    # Use the original implementation
     return get_sent_messages()
 
 def _send_message_impl(recipient, subject, message, outbox="", dry_run=False):
     """Implementation of send_message"""
-    # Use the original implementation
     return send_message(recipient, subject, message, outbox, dry_run)
 
 def _send_evr_impl(address, amount, dry_run=False):
     """Implementation of send_evr"""
-    # Use the original implementation
     return send_evr(address, amount, dry_run)
 
 def _generate_receive_address_impl(wallet_name="default", friendly_name=None):
     """Implementation of generate_receive_address"""
-    # Use the original implementation
     return generate_receive_address(wallet_name, friendly_name)
 
 def _navigate_browser_impl(url):
     """Implementation of navigate_browser"""
-    # Use the original implementation
     return navigate_browser(url)
 
 def _check_daemon_status_impl():
     """Implementation of check_daemon_status"""
-    # Use the logs to determine if the daemon is running properly
     ready_indicators = [
         "Daemon listening for transactions",
         "Reloading known addresses",
@@ -493,22 +505,17 @@ def _check_daemon_status_impl():
         "Starting ZMQ client"     # Add another indicator from logs
     ]
     
-    # Get all recent logs without filtering level to catch more indicators
     logs = get_log_entries()
     
-    # Debug output to help diagnose
     gui_log("debug", f"Checking daemon status with {len(logs)} recent log entries")
     
-    # Check if any of the ready indicators are in the logs
     for indicator in ready_indicators:
         for log in logs:
             if indicator in log.get("message", ""):
                 gui_log("info", f"Daemon ready detected via indicator: {indicator}")
                 return {"running": True, "status": "ready"}
     
-    # If daemon thread is running but no ready indicators found
     if _daemon_thread and _daemon_thread.is_alive():
-        # If we have many logs but didn't match indicators, probably running
         if len(logs) > 10:
             gui_log("info", "Daemon appears to be running based on log volume")
             return {"running": True, "status": "ready"}
@@ -517,18 +524,15 @@ def _check_daemon_status_impl():
     return {"running": False, "status": "not_running"}
 
 def _preload_app_data_impl():
-    """Implementation of preload_app_data"""
     result = {
         "wallet_ready": False,
         "message_count": 0
     }
     
     try:
-        # Check if wallet is ready
         addresses = get_all_addresses(False)
         result["wallet_ready"] = len(addresses) > 0
         
-        # Get message counts
         try:
             inbox_file = Path.home() / ".evrmail" / "inbox.json"
             if inbox_file.exists():
@@ -543,78 +547,55 @@ def _preload_app_data_impl():
     return result
 
 def _get_messages_impl():
-    """Implementation of get_messages"""
-    # Use the original implementation
     return get_messages()
 
 def _mark_message_read_impl(message_id):
-    """Implementation of mark_message_read"""
-    # Use the original implementation
     return mark_message_read(message_id)
 
 def _delete_message_impl(message_id):
-    """Implementation of delete_message"""
-    # Use the original implementation
     return delete_message(message_id)
 
 def _get_message_stats_impl():
-    """Implementation of get_message_stats"""
-    # Use the original implementation
     return get_message_stats()
 
 def _get_network_status_impl():
-    """Implementation of get_network_status"""
-    # Use the original implementation
     return get_network_status()
 
 def _get_app_version_impl():
-    """Implementation of get_app_version"""
-    # Use the original implementation
     return get_app_version()
 
 def _get_wallet_info_impl():
-    """Implementation of get_wallet_info"""
-    # Use the original implementation
     return get_wallet_info()
 
 def _open_in_system_browser_impl(url):
-    """Implementation of open_in_system_browser"""
-    # Use the original implementation
     return open_in_system_browser(url)
 
 def _get_contacts_impl():
-    """Implementation of get_contacts"""
-    # Use the original implementation
     return get_contacts()
 
 def _get_contact_requests_impl():
-    """Implementation of get_contact_requests"""
-    # Use the original implementation
     return get_contact_requests()
 
 def _send_contact_request_impl(address, name=None, address_mode="random", from_address=None, dry_run=False):
-    """Implementation of send_contact_request"""
-    # Use the original implementation
     return send_contact_request(address, name, address_mode, from_address, dry_run)
 
 def _remove_contact_impl(address):
-    """Implementation of remove_contact"""
-    # Use the original implementation
     return remove_contact(address)
 
 def _accept_contact_request_impl(address):
-    """Implementation of accept_contact_request"""
-    # Use the original implementation
     return accept_contact_request(address)
 
 def _reject_contact_request_impl(address):
-    """Implementation of reject_contact_request"""
-    # Use the original implementation
     return reject_contact_request(address)
 
 def _create_new_wallet_impl(name="", passphrase=""):
-    """Create a new wallet implementation"""
     return create_new_wallet(name, passphrase)
+    
+def _sign_message_impl(address, message):
+    return sign_message(address, message)
+
+def _verify_message_impl(address, signature, message):
+    return verify_message(address, signature, message)
 
 # Global objects
 _daemon_thread = None
@@ -1513,7 +1494,6 @@ def navigate_browser(url):
 
 def check_daemon_status():
     """Check if the daemon is running and ready"""
-    # Use the logs to determine if the daemon is running properly
     ready_indicators = [
         "Daemon listening for transactions",
         "Reloading known addresses",
@@ -1525,22 +1505,17 @@ def check_daemon_status():
         "Starting ZMQ client"     # Add another indicator from logs
     ]
     
-    # Get all recent logs without filtering level to catch more indicators
     logs = get_log_entries()
     
-    # Debug output to help diagnose
     gui_log("debug", f"Checking daemon status with {len(logs)} recent log entries")
     
-    # Check if any of the ready indicators are in the logs
     for indicator in ready_indicators:
         for log in logs:
             if indicator in log.get("message", ""):
                 gui_log("info", f"Daemon ready detected via indicator: {indicator}")
                 return {"running": True, "status": "ready"}
     
-    # If daemon thread is running but no ready indicators found
     if _daemon_thread and _daemon_thread.is_alive():
-        # If we have many logs but didn't match indicators, probably running
         if len(logs) > 10:
             gui_log("info", "Daemon appears to be running based on log volume")
             return {"running": True, "status": "ready"}
@@ -1550,18 +1525,15 @@ def check_daemon_status():
 
 
 def preload_app_data():
-    """Preload application data needed for startup"""
     result = {
         "wallet_ready": False,
         "message_count": 0
     }
     
     try:
-        # Check if wallet is ready
         addresses = get_all_addresses(False)
         result["wallet_ready"] = len(addresses) > 0
         
-        # Get message counts
         try:
             inbox_file = Path.home() / ".evrmail" / "inbox.json"
             if inbox_file.exists():
@@ -1577,46 +1549,40 @@ def preload_app_data():
 
 
 def get_messages():
-    """Get all messages (both inbox and sent)"""
-    try:
-        inbox_file = Path.home() / ".evrmail" / "inbox.json"
-        messages = []
+    inbox_file = Path.home() / ".evrmail" / "inbox.json"
+    messages = []
+    
+    if inbox_file.exists():
+        inbox = json.loads(inbox_file.read_text())
         
-        if inbox_file.exists():
-            inbox = json.loads(inbox_file.read_text())
+        # Format for JavaScript consumption
+        for msg in inbox:
+            # Extract content from the nested structure
+            content = msg.get("content", {})
+            if not isinstance(content, dict):
+                content = {}
             
-            # Format for JavaScript consumption
-            for msg in inbox:
-                # Extract content from the nested structure
-                content = msg.get("content", {})
-                if not isinstance(content, dict):
-                    content = {}
-                
-                # Generate unique ID if not present
-                msg_id = msg.get("id", "")
-                if not msg_id:
-                    msg_id = f"msg_{int(time.time())}_{len(messages)}"
-                
-                # Get timestamp or use current time
-                timestamp = msg.get("timestamp", int(time.time()))
-                
-                messages.append({
-                    "id": msg_id,
-                    "sender": content.get("from", msg.get("from", "Unknown")),
-                    "timestamp": timestamp,
-                    "subject": content.get("subject", "(No Subject)"),
-                    "content": content.get("content", "(No Content)"),
-                    "read": msg.get("read", False)
-                })
-        
-        return messages
-    except Exception as e:
-        gui_log("error", f"Error loading messages: {str(e)}")
-        return []
+            # Generate unique ID if not present
+            msg_id = msg.get("id", "")
+            if not msg_id:
+                msg_id = f"msg_{int(time.time())}_{len(messages)}"
+            
+            # Get timestamp or use current time
+            timestamp = msg.get("timestamp", int(time.time()))
+            
+            messages.append({
+                "id": msg_id,
+                "sender": content.get("from", msg.get("from", "Unknown")),
+                "timestamp": timestamp,
+                "subject": content.get("subject", "(No Subject)"),
+                "content": content.get("content", "(No Content)"),
+                "read": msg.get("read", False)
+            })
+    
+    return messages
 
 
 def mark_message_read(message_id):
-    """Mark a message as read"""
     try:
         inbox_file = Path.home() / ".evrmail" / "inbox.json"
         if not inbox_file.exists():
@@ -1644,7 +1610,6 @@ def mark_message_read(message_id):
 
 
 def delete_message(message_id):
-    """Delete a message from inbox"""
     try:
         inbox_file = Path.home() / ".evrmail" / "inbox.json"
         if not inbox_file.exists():
@@ -1668,7 +1633,6 @@ def delete_message(message_id):
 
 
 def get_message_stats():
-    """Get message statistics"""
     try:
         inbox_file = Path.home() / ".evrmail" / "inbox.json"
         sent_file = Path.home() / ".evrmail" / "sent.json"
@@ -1703,7 +1667,6 @@ def get_message_stats():
 
 
 def get_network_status():
-    """Get network connection status"""
     try:
         from evrmail import rpc_client
         
@@ -1761,13 +1724,11 @@ def get_network_status():
 
 
 def get_app_version():
-    """Get application version"""
     from evrmail import __version__
     return __version__
 
 
 def get_wallet_info():
-    """Get diagnostic information about the wallet data structure"""
     try:
         from evrmail.wallet.addresses import get_all_addresses
         from evrmail.wallet import load_wallet
@@ -1843,7 +1804,6 @@ def get_wallet_info():
 
 
 def open_in_system_browser(url):
-    """Open a URL in the system's default browser"""
     try:
         import webbrowser
         
@@ -1864,7 +1824,6 @@ def open_in_system_browser(url):
 
 
 def get_contacts():
-    """Get list of contacts from config."""
     try:
         config = load_config()
         contacts = config.get("contacts", {})
@@ -1876,7 +1835,6 @@ def get_contacts():
 
 
 def get_contact_requests():
-    """Get list of pending contact requests."""
     try:
         config = load_config()
         requests = config.get("contact_requests", {})
@@ -2026,7 +1984,7 @@ def reject_contact_request(address: str):
         return {"success": False, "error": str(e)}
 
 def create_new_wallet(name="", passphrase=""):
-    """Create a new wallet with optional name and passphrase"""
+    """Create a new wallet"""
     try:
         from evrmail.wallet import utils, store
         
@@ -2338,5 +2296,90 @@ def get_evr_url(url):
         gui_log("error", f"Error processing EVR URL: {str(e)}")
         return {
             "success": False,
+            "error": str(e)
+        }
+
+def sign_message(address: str, message: str):
+    """Sign a message with a wallet address
+    
+    Args:
+        address: The address to sign the message with
+        message: The message to sign
+        
+    Returns:
+        Dictionary with success flag and signature or error
+    """
+    gui_log("info", f"Signing message with address {address}")
+    
+    try:
+        # First, validate the address
+        address_info = validate_evr_address(address)
+        if not address_info["isvalid"]:
+            return {
+                "success": False,
+                "error": "Invalid Evrmore address"
+            }
+        
+        # Get the private key for the address
+        try:
+            from evrmail.wallet.utils import get_private_key_for_address
+            private_key = get_private_key_for_address(address)
+        except Exception as e:
+            gui_log("error", f"Error getting private key: {str(e)}")
+            return {
+                "success": False,
+                "error": f"Address not found in any wallet or private key not available: {str(e)}"
+            }
+        
+        # Sign the message using the crypto utility
+        from evrmail.crypto import sign_message as crypto_sign_message
+        signature = crypto_sign_message(message, private_key)
+        
+        return {
+            "success": True,
+            "signature": signature,
+            "address": address
+        }
+    except Exception as e:
+        gui_log("error", f"Error signing message: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+def verify_message(address: str, signature: str, message: str):
+    """Verify a message signature
+    
+    Args:
+        address: The address the message was signed with
+        signature: The signature to verify
+        message: The message to verify
+        
+    Returns:
+        Dictionary with valid flag and error or None
+    """
+    gui_log("info", f"Verifying message signature for address {address}")
+    
+    try:
+        # First, validate the address
+        address_info = validate_evr_address(address)
+        if not address_info["isvalid"]:
+            return {
+                "valid": False,
+                "error": "Invalid Evrmore address"
+            }
+        
+        # Use the crypto utility to verify the signature
+        from evrmail.crypto import verify_message as crypto_verify_message
+        verified = crypto_verify_message(address, signature, message)
+        
+        return {
+            "valid": verified,
+            "address": address
+        }
+    except Exception as e:
+        gui_log("error", f"Error verifying message signature: {str(e)}")
+        return {
+            "valid": False,
             "error": str(e)
         }

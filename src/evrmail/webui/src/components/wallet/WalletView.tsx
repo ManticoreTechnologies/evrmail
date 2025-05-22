@@ -6,6 +6,7 @@ import ReceiveSection from './ReceiveSection';
 import AddressesSection from './AddressesSection';
 import AssetsSection from './AssetsSection';
 import WalletManageSection from './WalletManageSection';
+import SignMessageSection from './SignMessageSection';
 import './Wallet.css';
 
 interface WalletViewProps {
@@ -13,7 +14,7 @@ interface WalletViewProps {
 }
 
 // Define wallet tab types
-type WalletTab = 'overview' | 'send' | 'receive' | 'addresses' | 'assets' | 'manage';
+type WalletTab = 'overview' | 'send' | 'receive' | 'addresses' | 'assets' | 'manage' | 'sign';
 
 const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
   // State for wallet data
@@ -116,6 +117,13 @@ const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
             assets={balances?.assets || {}}
           />
         );
+      case 'sign':
+        return (
+          <SignMessageSection 
+            backend={backend}
+            addresses={addresses}
+          />
+        );
       case 'manage':
         return (
           <WalletManageSection 
@@ -166,6 +174,12 @@ const WalletView: React.FC<WalletViewProps> = ({ backend }) => {
             Assets
           </button>
         )}
+        <button 
+          className={`tab-button ${activeTab === 'sign' ? 'active' : ''}`}
+          onClick={() => setActiveTab('sign')}
+        >
+          Sign
+        </button>
         <button 
           className={`tab-button ${activeTab === 'manage' ? 'active' : ''}`}
           onClick={() => setActiveTab('manage')}

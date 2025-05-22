@@ -135,33 +135,33 @@ const Dashboard: React.FC<DashboardProps> = ({ backend, onNavigate }) => {
   
   return (
     <div className="dashboard-container">
-      <QuickStatsCard 
-        stats={stats}
-        walletData={walletData}
-      />
-      <MessageActivityCard 
-        messages={messages}
-        backend={backend}
+        <QuickStatsCard 
+          stats={stats}
+          walletData={walletData}
+        />
+        <MessageActivityCard 
+          messages={messages}
+          backend={backend}
         onNavigate={handleNavigate}
-      />
-      <NetworkStatusCard 
-        networkStatus={networkStatus}
-      />
+        />
+        <NetworkStatusCard 
+          networkStatus={networkStatus}
+        />
       
-      <WalletOverviewCard 
-        walletData={walletData}
-        backend={backend}
+        <WalletOverviewCard 
+          walletData={walletData}
+          backend={backend}
         onNavigate={handleNavigate}
-      />
+        />
       
-      <ContactsCard 
-        contacts={contacts}
-        backend={backend}
+        <ContactsCard 
+          contacts={contacts}
+          backend={backend}
         onNavigate={handleNavigate}
-      />
-      <RecentActionsCard 
-        actions={recentActions}
-      />
+        />
+        <RecentActionsCard 
+          actions={recentActions}
+        />
       
       <QuickActionsRow 
         backend={backend} 
