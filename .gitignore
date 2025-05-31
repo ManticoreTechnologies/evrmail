@@ -5,3 +5,10 @@ build/
 *.log
 *.pid
 *.egg-info
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.db-trace
+*.db-lock
+*.db-trace

@@ -1,0 +1,38 @@
+/* Social Media Icons CSS */
+.social-icons {
+  display: flex;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.social-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 4px;
+  color: white;
+  text-decoration: none;
+  transition: transform 0.2s;
+}
+
+.social-icon:hover {
+  transform: scale(1.1);
+}
+
+.facebook {
+  background-color: #8b2a15;
+}
+
+.youtube {
+  background-color: #8b2a15;
+}
+
+.linkedin {
+  background-color: #8b2a15;
+}
+
+.facebook i, .youtube i, .linkedin i {
+  font-size: 20px;
+} 

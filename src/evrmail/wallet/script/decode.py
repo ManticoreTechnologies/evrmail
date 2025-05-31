@@ -14,9 +14,6 @@ def decode(script_hex: str) -> Dict[str, Any]:
     - OP_EVR_ASSET (with asset fields parsed)
     """
     result: Dict[str, Any] = {}
-    print("SCRIPTHEX---")
-    print(script_hex)
-    print("SCRIPTHEXEND")
     script = bytes.fromhex(script_hex)
 
     if not script:
